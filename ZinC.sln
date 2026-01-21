@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZinC.Cli", "ZinC.Cli\ZinC.Cli.csproj", "{EFCFB4E8-DFF7-4917-A5E5-914C0F2C702F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EFCFB4E8-DFF7-4917-A5E5-914C0F2C702F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFCFB4E8-DFF7-4917-A5E5-914C0F2C702F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFCFB4E8-DFF7-4917-A5E5-914C0F2C702F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFCFB4E8-DFF7-4917-A5E5-914C0F2C702F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

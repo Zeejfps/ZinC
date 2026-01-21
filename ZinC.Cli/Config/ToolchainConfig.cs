@@ -13,6 +13,12 @@ internal sealed record ToolchainConfig
     [JsonPropertyName("compiler_exe")]
     public string CompilerExe { get; init; } = "gcc";
 
+    [JsonPropertyName("lib_dir_format")]
+    public string LibDirFormat { get; init; } = "-L{0}";
+
+    [JsonPropertyName("lib_format")]
+    public string LibFormat { get; init; } = "-l{0}";
+
     [JsonPropertyName("src_dir")]
     public string SrcDir { get; init; } = "src";
 

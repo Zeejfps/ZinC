@@ -6,6 +6,8 @@
   "include_dirs": ["include"],
 
   "compiler_exe": "gcc",
+  "lib_dir_format": "-L{0}",
+  "lib_format": "-l{0}",
 
   "flags": [
     "-std=c17",

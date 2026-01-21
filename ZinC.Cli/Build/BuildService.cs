@@ -102,8 +102,8 @@ internal sealed class BuildService
 
         var linkFlags = CollectLinkFlags(config, modeConfig, platformConfig, artifactTypeConfig);
         var libDirs = platformConfig.LibDirs ?? [];
-        var libDirFlags = libDirs.Select(dir => $"-L{Path.Combine(workingDir, dir)}");
-        var libFlags = platformConfig.Libs.Select(lib => $"-l{lib}");
+        var libDirFlags = libDirs.Select(dir => string.Format(config.LibDirFormat, Path.Combine(workingDir, dir)));
+        var libFlags = platformConfig.Libs.Select(lib => string.Format(config.LibFormat, lib));
 
         var linkArgs = new List<string>();
         linkArgs.AddRange(objectFiles);

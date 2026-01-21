@@ -6,6 +6,10 @@ namespace ZinC.Cli.Build;
 
 internal sealed class BuildAction : ZincCommandAction
 {
+    public required Option<string> ModeOption { get; init; }
+    public required Option<string> PlatformOption { get; init; }
+    public required Option<string> CompilerOption { get; init; }
+    
     public BuildAction(IConsole console, ILogger logger) : base(console, logger)
     {
     }

@@ -27,9 +27,7 @@ internal sealed class SetupAction : ZincCommandAction
         CompilerOption
     ];
 
-    public SetupAction(IConsole console, ILogger logger) : base(console, logger)
-    {
-    }
+    public SetupAction(IConsole console, ILogger logger) : base(console, logger) { }
 
     protected override async Task<int> OnInvokedAsync(ParseResult parseResult, CancellationToken cancellationToken)
     {

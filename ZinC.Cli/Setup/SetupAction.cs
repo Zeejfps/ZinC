@@ -14,8 +14,10 @@ internal sealed class SetupAction : ZincCommandAction
     {
     }
 
-    protected override Task<int> OnInvokedAsync(ParseResult parseResult, CancellationToken cancellationToken)
+    protected override async Task<int> OnInvokedAsync(ParseResult parseResult, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var projectType = parseResult.GetRequiredValue(ProjectTypeArgument);
+        WriteLine("Project type: " + projectType + "");
+        return 0;
     }
 }

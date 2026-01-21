@@ -10,9 +10,10 @@ using ZinC.Cli.Setup;
 var console = new DefaultConsole();
 var logger = new ConsoleLogger();
 
+var projectTypeArg = new ProjectTypeArgument("project-type");
 var initAction = new SetupAction(console, logger)
 {
-    ProjectTypeArgument = new Argument<ProjectType>("project-type")
+    ProjectTypeArgument = projectTypeArg
 };
 var buildAction = new BuildAction(console, logger);
 var runAction = new RunAction(console, logger);
@@ -22,7 +23,7 @@ var rootCommand = new RootCommand("The simplest 'C' build tool around.")
     Action = new HelpAction(),
     Subcommands =
     {
-        new Command("init", "Initializes a new project.")
+        new Command("setup", "Sets up a new project.")
             .WithAction(initAction),
         
         new Command("build", "Builds the project.")

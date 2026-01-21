@@ -16,11 +16,13 @@ var initAction = new SetupAction(console, logger)
     ProjectTypeArgument = projectTypeArg,
     ArtifactNameOption = new Option<string>("--name", "-n")
     {
+        Required = true,
         Description = "The name of the artifact."
     },
     CompilerOption = new Option<string>("--compiler", "-c")
     {
-        Description = "The compiler to use."
+        Required = true,
+        Description = "The compiler to use.",
     }
 };
 var buildAction = new BuildAction(console, logger);

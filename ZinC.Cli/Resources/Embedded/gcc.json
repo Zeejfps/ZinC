@@ -3,6 +3,10 @@
   "artifact_type": "executable",
 
   "compiler_exe": "gcc",
+  
+  "src_dir": "src",
+  "out_dir": "out",
+  "include_dirs": ["include"],
 
   "flags": [
     "-std=c17",

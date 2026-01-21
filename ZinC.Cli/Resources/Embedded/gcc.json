@@ -1,12 +1,11 @@
 {
-  "artifact_name": "program",
+  "artifact_name": "a",
   "artifact_type": "executable",
-
-  "compiler_exe": "gcc",
-  
   "src_dir": "src",
   "out_dir": "out",
   "include_dirs": ["include"],
+
+  "compiler_exe": "gcc",
 
   "flags": [
     "-std=c17",

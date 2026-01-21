@@ -189,21 +189,11 @@ internal sealed class BuildAction : ZincCommandAction
         PlatformConfig platformConfig,
         ArtifactTypeConfig artifactTypeConfig)
     {
-        var flags = new List<string>();
-        
-        if (config.Flags != null)
-            flags.AddRange(config.Flags);
-        
-        if (modeConfig.Flags != null)
-            flags.AddRange(modeConfig.Flags);
-        
-        if (platformConfig.Flags != null)
-            flags.AddRange(platformConfig.Flags);
-        
-        if (artifactTypeConfig.Flags != null)
-            flags.AddRange(artifactTypeConfig.Flags);
-        
-        return flags;
+        return Collect(
+            config.Flags,
+            modeConfig.Flags,
+            platformConfig.Flags,
+            artifactTypeConfig.Flags);
     }
 
     private static List<string> CollectDefines(
@@ -211,11 +201,10 @@ internal sealed class BuildAction : ZincCommandAction
         ModeConfig modeConfig,
         PlatformConfig platformConfig)
     {
-        var defines = new List<string>();
-        defines.AddRange(config.Defines);
-        defines.AddRange(modeConfig.Defines);
-        defines.AddRange(platformConfig.Defines);
-        return defines;
+        return Collect(
+            config.Defines,
+            modeConfig.Defines,
+            platformConfig.Defines);
     }
 
     private static List<string> CollectLinkFlags(
@@ -224,13 +213,32 @@ internal sealed class BuildAction : ZincCommandAction
         PlatformConfig platformConfig,
         ArtifactTypeConfig artifactTypeConfig)
     {
-        var flags = new List<string>();
-        flags.AddRange(config.LinkFlags);
-        flags.AddRange(modeConfig.LinkFlags);
-        flags.AddRange(platformConfig.LinkFlags);
-        flags.AddRange(artifactTypeConfig.LinkFlags);
-        
-        return flags;
+        return Collect(
+            config.LinkFlags,
+            modeConfig.LinkFlags,
+            platformConfig.LinkFlags,
+            artifactTypeConfig.LinkFlags
+        );
+    }
+
+    private static List<string> Collect(params IEnumerable<string>?[] sources)
+    {
+        var seen = new HashSet<string>();
+        var result = new List<string>();
+
+        foreach (var source in sources)
+        {
+            if (source is null) continue;
+            foreach (var item in source)
+            {
+                if (seen.Add(item))
+                {
+                    result.Add(item);
+                }
+            }
+        }
+
+        return result;
     }
 
     private async Task<int> RunProcessAsync(string fileName, List<string> arguments, string workingDir, CancellationToken cancellationToken)

@@ -61,6 +61,7 @@
       ],
       "flags": [],
       "libs": [],
+      "lib_dirs": [],
       "link_flags": []
     },
     "linux": {
@@ -77,6 +78,7 @@
       "libs": [
         "m"
       ],
+      "lib_dirs": [],
       "link_flags": []
     },
     "macos": {
@@ -89,6 +91,7 @@
         "-fPIC"
       ],
       "libs": [],
+      "lib_dirs": [],
       "link_flags": []
     }
   },

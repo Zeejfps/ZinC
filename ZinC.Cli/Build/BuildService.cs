@@ -101,6 +101,7 @@ internal sealed class BuildService
         _console.WriteLine($"  Linking: {Path.GetFileName(artifactPath)}");
 
         var linkFlags = CollectLinkFlags(config, modeConfig, platformConfig, artifactTypeConfig);
+        var libDirFlags = platformConfig.LibDirs.Select(dir => $"-L{Path.Combine(workingDir, dir)}");
         var libFlags = platformConfig.Libs.Select(lib => $"-l{lib}");
 
         var linkArgs = new List<string>();
@@ -108,6 +109,7 @@ internal sealed class BuildService
         linkArgs.Add("-o");
         linkArgs.Add(artifactPath);
         linkArgs.AddRange(linkFlags);
+        linkArgs.AddRange(libDirFlags);
         linkArgs.AddRange(libFlags);
 
         var linkResult = await RunProcessAsync(config.CompilerExe, linkArgs, workingDir, cancellationToken);

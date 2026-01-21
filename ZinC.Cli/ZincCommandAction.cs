@@ -7,17 +7,33 @@ internal abstract class ZincCommandAction : AsynchronousCommandLineAction
 {
     public virtual Argument[] Arguments => [];
     public virtual Option[] Options => [];
-
+    
     private readonly IConsole _console;
+    private readonly ILogger _logger;
 
-    protected ZincCommandAction(IConsole console)
+    protected ZincCommandAction(IConsole console, ILogger logger)
     {
         _console = console;
+        _logger = logger;
     }
 
-    public override Task<int> InvokeAsync(ParseResult parseResult, CancellationToken cancellationToken = default)
+    public override async Task<int> InvokeAsync(ParseResult parseResult, CancellationToken cancellationToken = default)
     {
-        return OnInvokedAsync(parseResult, cancellationToken);
+        try
+        {
+            return await OnInvokedAsync(parseResult, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            WriteErrorLine($"Failed to execute {parseResult.CommandResult.Command} command");
+            WriteErrorLine($"{ex.GetType()}: {ex.Message}");
+            _logger.LogException(ex);
+            return 1;
+        }
     }
     
     protected abstract Task<int> OnInvokedAsync(ParseResult parseResult, CancellationToken cancellationToken);
@@ -25,5 +41,10 @@ internal abstract class ZincCommandAction : AsynchronousCommandLineAction
     protected void WriteLine(string message)
     {
         _console.WriteLine(message);
+    }
+
+    protected void WriteErrorLine(string message)
+    {
+        _console.WriteErrorLine(message);
     }
 }

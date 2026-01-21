@@ -25,26 +25,38 @@ var initAction = new SetupAction(console, logger)
         Description = "The compiler to use.",
     }
 };
-var buildAction = new BuildAction(console, logger)
+
+var modeOption = new Option<string>("--mode", "-m")
 {
-    ModeOption = new Option<string>("--mode", "-m")
-    {
-        Description = "The build mode (release, debug, etc...)",
-        Required = true
-    },
-    PlatformOption = new Option<string>("--platform", "-p")
-    {
-        Description = "The platform to build for (windows, osx, linux, wasm, etc...)",
-        Required = true
-    },
-    ConfigOption = new Option<string>("--config", "-c")
-    {
-        Description = "The compiler to use.",
-        Required = true
-    }
+    Description = "The build mode (release, debug, etc...)",
+    Required = true
 };
 
-var runAction = new RunAction(console, logger);
+var platformOption = new Option<string>("--platform", "-p")
+{
+    Description = "The platform to build for (windows, osx, linux, wasm, etc...)",
+    Required = true
+};
+
+var configOption = new Option<string>("--config", "-c")
+{
+    Description = "The configuration to use.",
+    Required = true
+};
+
+var buildAction = new BuildAction(console, logger)
+{
+    ModeOption = modeOption,
+    PlatformOption = platformOption,
+    ConfigOption = configOption,
+};
+
+var runAction = new RunAction(console, logger)
+{
+    ModeOption = modeOption,
+    PlatformOption = platformOption,
+    ConfigOption = configOption,
+};
 
 var rootCommand = new RootCommand("The simplest 'C' build tool around.")
 {

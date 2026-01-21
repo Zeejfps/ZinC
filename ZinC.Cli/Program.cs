@@ -13,7 +13,15 @@ var logger = new ConsoleLogger();
 var projectTypeArg = new ProjectTypeArgument("project-type");
 var initAction = new SetupAction(console, logger)
 {
-    ProjectTypeArgument = projectTypeArg
+    ProjectTypeArgument = projectTypeArg,
+    ArtifactNameOption = new Option<string>("--name", "-n")
+    {
+        Description = "The name of the artifact."
+    },
+    CompilerOption = new Option<string>("--compiler", "-c")
+    {
+        Description = "The compiler to use."
+    }
 };
 var buildAction = new BuildAction(console, logger);
 var runAction = new RunAction(console, logger);

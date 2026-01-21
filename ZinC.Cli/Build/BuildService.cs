@@ -61,7 +61,8 @@ internal sealed class BuildService
 
             _console.WriteLine($"  Compiling: {relativePath}");
 
-            var compileArgs = new List<string> { "-c", sourceFile, "-o", objectFile };
+            var compileArgs = new List<string> { config.CompileFlag, sourceFile };
+            compileArgs.AddRange(FormatToArgs(config.CompileOutputFormat, objectFile));
             compileArgs.AddRange(allCompileFlags);
 
             var compileResult = await RunProcessAsync(config.CompilerExe, compileArgs, workingDir, cancellationToken);
@@ -107,8 +108,7 @@ internal sealed class BuildService
 
         var linkArgs = new List<string>();
         linkArgs.AddRange(objectFiles);
-        linkArgs.Add("-o");
-        linkArgs.Add(artifactPath);
+        linkArgs.AddRange(FormatToArgs(config.LinkOutputFormat, artifactPath));
         linkArgs.AddRange(linkFlags);
         linkArgs.AddRange(libDirFlags);
         linkArgs.AddRange(libFlags);
@@ -209,6 +209,12 @@ internal sealed class BuildService
         }
 
         return result;
+    }
+
+    private static IEnumerable<string> FormatToArgs(string format, string value)
+    {
+        var formatted = string.Format(format, value);
+        return formatted.Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
 
     private async Task<int> RunProcessAsync(

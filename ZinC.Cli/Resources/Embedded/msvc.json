@@ -1,0 +1,97 @@
+{
+  "artifact_name": "a",
+  "artifact_type": "executable",
+  "src_dir": "src",
+  "out_dir": "out",
+  "include_dirs": ["include"],
+
+  "compiler_exe": "cl",
+  "lib_dir_format": "/LIBPATH:{0}",
+  "lib_format": "{0}.lib",
+  "compile_flag": "/c",
+  "compile_output_format": "/Fo{0}",
+  "link_output_format": "/OUT:{0}",
+
+  "flags": [
+    "/std:c17",
+    "/W4",
+    "/WX",
+    "/nologo",
+    "/utf-8"
+  ],
+
+  "link_flags": [
+    "/nologo"
+  ],
+
+  "defines": [],
+
+  "modes": {
+    "debug": {
+      "flags": [
+        "/Zi",
+        "/Od",
+        "/MDd",
+        "/RTC1",
+        "/FC"
+      ],
+      "defines": [
+        "DEBUG",
+        "_DEBUG"
+      ],
+      "link_flags": [
+        "/DEBUG:FULL"
+      ]
+    },
+    "release": {
+      "flags": [
+        "/O2",
+        "/MD",
+        "/GL",
+        "/Gy"
+      ],
+      "defines": [
+        "NDEBUG"
+      ],
+      "link_flags": [
+        "/LTCG",
+        "/OPT:REF",
+        "/OPT:ICF"
+      ]
+    }
+  },
+
+  "platforms": {
+    "windows": {
+      "artifact_extension": ".exe",
+      "static_lib_extension": ".lib",
+      "shared_lib_extension": ".dll",
+      "object_extension": ".obj",
+      "defines": [
+        "WIN32",
+        "_WIN32",
+        "_CRT_SECURE_NO_WARNINGS"
+      ],
+      "flags": [],
+      "libs": [],
+      "lib_dirs": [],
+      "link_flags": []
+    }
+  },
+
+  "artifact_types": {
+    "executable": {
+      "link_flags": [
+        "/SUBSYSTEM:CONSOLE"
+      ]
+    },
+    "static_library": {
+      "use_archiver": true,
+      "archiver_flags": ["/nologo"]
+    },
+    "shared_library": {
+      "flags": [],
+      "link_flags": ["/DLL"]
+    }
+  }
+}

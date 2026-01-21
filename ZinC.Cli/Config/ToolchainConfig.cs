@@ -19,6 +19,15 @@ internal sealed record ToolchainConfig
     [JsonPropertyName("lib_format")]
     public string LibFormat { get; init; } = "-l{0}";
 
+    [JsonPropertyName("compile_flag")]
+    public string CompileFlag { get; init; } = "-c";
+
+    [JsonPropertyName("compile_output_format")]
+    public string CompileOutputFormat { get; init; } = "-o {0}";
+
+    [JsonPropertyName("link_output_format")]
+    public string LinkOutputFormat { get; init; } = "-o {0}";
+
     [JsonPropertyName("src_dir")]
     public string SrcDir { get; init; } = "src";
 

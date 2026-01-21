@@ -77,7 +77,7 @@ internal sealed record PlatformConfig
     public List<string> Libs { get; init; } = [];
 
     [JsonPropertyName("lib_dirs")]
-    public List<string> LibDirs { get; init; } = [];
+    public List<string>? LibDirs { get; init; }
 
     [JsonPropertyName("link_flags")]
     public List<string> LinkFlags { get; init; } = [];

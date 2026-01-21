@@ -101,7 +101,8 @@ internal sealed class BuildService
         _console.WriteLine($"  Linking: {Path.GetFileName(artifactPath)}");
 
         var linkFlags = CollectLinkFlags(config, modeConfig, platformConfig, artifactTypeConfig);
-        var libDirFlags = platformConfig.LibDirs.Select(dir => $"-L{Path.Combine(workingDir, dir)}");
+        var libDirs = platformConfig.LibDirs ?? [];
+        var libDirFlags = libDirs.Select(dir => $"-L{Path.Combine(workingDir, dir)}");
         var libFlags = platformConfig.Libs.Select(lib => $"-l{lib}");
 
         var linkArgs = new List<string>();

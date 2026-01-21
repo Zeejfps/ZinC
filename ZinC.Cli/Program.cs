@@ -37,7 +37,7 @@ var buildAction = new BuildAction(console, logger)
         Description = "The platform to build for (windows, osx, linux, wasm, etc...)",
         Required = true
     },
-    CompilerOption = new Option<string>("--config", "-c")
+    ConfigOption = new Option<string>("--config", "-c")
     {
         Description = "The compiler to use.",
         Required = true

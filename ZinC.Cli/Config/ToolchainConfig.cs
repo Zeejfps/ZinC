@@ -44,13 +44,13 @@ internal sealed record ToolchainConfig
 internal sealed record ModeConfig
 {
     [JsonPropertyName("flags")]
-    public List<string> Flags { get; init; } = [];
+    public List<string>? Flags { get; init; }
 
     [JsonPropertyName("defines")]
-    public List<string> Defines { get; init; } = [];
+    public List<string>? Defines { get; init; }
 
     [JsonPropertyName("link_flags")]
-    public List<string> LinkFlags { get; init; } = [];
+    public List<string>? LinkFlags { get; init; }
 }
 
 internal sealed record PlatformConfig
@@ -83,14 +83,14 @@ internal sealed record PlatformConfig
 internal sealed record ArtifactTypeConfig
 {
     [JsonPropertyName("flags")]
-    public List<string> Flags { get; init; } = [];
+    public List<string>? Flags { get; init; }
 
     [JsonPropertyName("link_flags")]
-    public List<string> LinkFlags { get; init; } = [];
+    public List<string>? LinkFlags { get; init; }
 
     [JsonPropertyName("use_archiver")]
     public bool UseArchiver { get; init; }
 
     [JsonPropertyName("archiver_flags")]
-    public List<string> ArchiverFlags { get; init; } = [];
+    public List<string>? ArchiverFlags { get; init; }
 }

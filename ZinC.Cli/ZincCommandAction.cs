@@ -5,6 +5,9 @@ namespace ZinC.Cli;
 
 internal abstract class ZincCommandAction : AsynchronousCommandLineAction
 {
+    public virtual Argument[] Arguments => [];
+    public virtual Option[] Options => [];
+
     private readonly IConsole _console;
 
     protected ZincCommandAction(IConsole console)

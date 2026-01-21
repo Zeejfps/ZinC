@@ -30,14 +30,17 @@ var buildAction = new BuildAction(console, logger)
     ModeOption = new Option<string>("--mode", "-m")
     {
         Description = "The build mode (release, debug, etc...)",
+        Required = true
     },
     PlatformOption = new Option<string>("--platform", "-p")
     {
         Description = "The platform to build for (windows, osx, linux, wasm, etc...)",
+        Required = true
     },
-    CompilerOption = new Option<string>("--compiler", "-c")
+    CompilerOption = new Option<string>("--config", "-c")
     {
         Description = "The compiler to use.",
+        Required = true
     }
 };
 

@@ -1,0 +1,106 @@
+{
+  "artifact_name": "program",
+  "artifact_type": "executable",
+
+  "compiler_exe": "gcc",
+
+  "flags": [
+    "-std=c17",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Werror=return-type",
+    "-Werror=implicit-function-declaration",
+    "-fdiagnostics-color=always"
+  ],
+
+  "link_flags": [],
+
+  "defines": [],
+
+  "modes": {
+    "debug": {
+      "flags": [
+        "-g3",
+        "-O0",
+        "-fno-omit-frame-pointer"
+      ],
+      "defines": [
+        "DEBUG",
+        "_DEBUG"
+      ],
+      "link_flags": []
+    },
+    "release": {
+      "flags": [
+        "-O2",
+        "-flto"
+      ],
+      "defines": [
+        "NDEBUG"
+      ],
+      "link_flags": [
+        "-s",
+        "-flto"
+      ]
+    }
+  },
+
+  "platforms": {
+    "windows": {
+      "artifact_extension": ".exe",
+      "static_lib_extension": ".a",
+      "shared_lib_extension": ".dll",
+      "object_extension": ".o",
+      "defines": [
+        "WIN32",
+        "_WIN32"
+      ],
+      "flags": [],
+      "libs": [],
+      "link_flags": []
+    },
+    "linux": {
+      "artifact_extension": "",
+      "static_lib_extension": ".a",
+      "shared_lib_extension": ".so",
+      "object_extension": ".o",
+      "defines": [
+        "_GNU_SOURCE"
+      ],
+      "flags": [
+        "-fPIC"
+      ],
+      "libs": [
+        "m"
+      ],
+      "link_flags": []
+    },
+    "macos": {
+      "artifact_extension": "",
+      "static_lib_extension": ".a",
+      "shared_lib_extension": ".dylib",
+      "object_extension": ".o",
+      "defines": [],
+      "flags": [
+        "-fPIC"
+      ],
+      "libs": [],
+      "link_flags": []
+    }
+  },
+
+  "artifact_types": {
+    "executable": {
+      "link_flags": []
+    },
+    "static_library": {
+      "use_archiver": true,
+      "archiver_flags": ["rcs"]
+    },
+    "shared_library": {
+      "flags": ["-fPIC"],
+      "link_flags": ["-shared"]
+    }
+  }
+}

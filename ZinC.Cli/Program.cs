@@ -3,14 +3,17 @@ using System.CommandLine.Help;
 using ZinC.Cli.Build;
 using ZinC.Cli.Console;
 using ZinC.Cli.Extensions;
-using ZinC.Cli.Init;
 using ZinC.Cli.Logging;
 using ZinC.Cli.Run;
+using ZinC.Cli.Setup;
 
 var console = new DefaultConsole();
 var logger = new ConsoleLogger();
 
-var initAction = new InitAction(console, logger);
+var initAction = new SetupAction(console, logger)
+{
+    ProjectTypeArgument = new Argument<ProjectType>("project-type")
+};
 var buildAction = new BuildAction(console, logger);
 var runAction = new RunAction(console, logger);
 

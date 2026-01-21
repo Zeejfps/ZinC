@@ -2,7 +2,7 @@
 
 namespace ZinC.Cli.Resources;
 
-internal class EmbeddedResourcesService
+internal sealed class EmbeddedResourcesService
 {
     private const string ResourcePrefix = "ZinC.Cli.Resources.Embedded.";
     private readonly Assembly _assembly;

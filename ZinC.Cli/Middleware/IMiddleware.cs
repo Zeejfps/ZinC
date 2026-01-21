@@ -1,6 +1,6 @@
 ﻿using System.CommandLine;
 
-namespace ZinC.Cli;
+namespace ZinC.Cli.Middleware;
 
 internal interface IMiddleware
 {

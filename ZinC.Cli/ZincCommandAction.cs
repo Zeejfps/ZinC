@@ -1,5 +1,7 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Invocation;
+using ZinC.Cli.Console;
+using ZinC.Cli.Logging;
 
 namespace ZinC.Cli;
 

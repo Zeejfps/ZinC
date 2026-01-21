@@ -1,4 +1,6 @@
 ﻿using System.CommandLine;
+using ZinC.Cli.Console;
+using ZinC.Cli.Logging;
 
 namespace ZinC.Cli.Build;
 

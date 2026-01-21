@@ -1,4 +1,4 @@
-﻿namespace ZinC.Cli;
+﻿namespace ZinC.Cli.Console;
 
 internal interface IConsole
 {

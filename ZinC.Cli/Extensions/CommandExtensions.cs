@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
+using ZinC.Cli.Middleware;
 
-namespace ZinC.Cli;
+namespace ZinC.Cli.Extensions;
 
 internal static class CommandExtensions
 {

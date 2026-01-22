@@ -1,8 +1,16 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using ZinC.Cli.Config;
 using ZinC.Cli.Console;
 
 namespace ZinC.Cli.Build;
+
+internal readonly struct CompilationUnit
+{
+    public required string SourceFile { get; init; }
+    public required string ObjectFile { get; init; }
+    public required string RelativePath { get; init; }
+}
 
 internal sealed class BuildService
 {
@@ -55,28 +63,67 @@ internal sealed class BuildService
         var compileOutputFormat = config.CompileOutputFormat!;
         var objectExtension = platformConfig.ObjectExtension ?? ".o";
 
-        // Compile phase
         var objectFiles = new List<string>();
+        var compilationUnits = new List<CompilationUnit>();
+
         foreach (var sourceFile in sourceFiles)
         {
             var relativePath = Path.GetRelativePath(srcDir, sourceFile);
             var objectFileName = Path.ChangeExtension(relativePath, objectExtension)
                 .Replace(Path.DirectorySeparatorChar, '_');
             var objectFile = Path.Combine(objDir, objectFileName);
-            objectFiles.Add(objectFile);
-
-            _console.WriteLine($"  Compiling: {relativePath}");
-
-            var compileArgs = new List<string> { compileFlag, sourceFile };
-            compileArgs.AddRange(FormatToArgs(compileOutputFormat, objectFile));
-            compileArgs.AddRange(allCompileFlags);
-
-            var compileResult = await RunProcessAsync(compilerExe, compileArgs, workingDir, cancellationToken);
-            if (compileResult != 0)
+            compilationUnits.Add(new CompilationUnit
             {
-                _console.WriteErrorLine($"Compilation failed for: {relativePath}");
-                return new BuildResult(false, null, compileResult);
+                SourceFile = sourceFile,
+                ObjectFile = objectFile,
+                RelativePath = relativePath
+            });
+            objectFiles.Add(objectFile);
+        }
+        
+        // Compile phase (parallel)
+        var failedFile = new ConcurrentBag<string>();
+        var firstError = 0;
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        var parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = Environment.ProcessorCount,
+            CancellationToken = cts.Token
+        };
+
+        try
+        {
+            await Parallel.ForEachAsync(compilationUnits, parallelOptions, async (unit, ct) =>
+            {
+                _console.WriteLine($"  Compiling: {unit.RelativePath}");
+
+                var compileArgs = new List<string> { compileFlag, unit.SourceFile };
+                compileArgs.AddRange(FormatToArgs(compileOutputFormat, unit.ObjectFile));
+                compileArgs.AddRange(allCompileFlags);
+
+                var compileResult = await RunProcessAsync(compilerExe, compileArgs, workingDir, ct);
+                if (compileResult != 0)
+                {
+                    failedFile.Add(unit.RelativePath);
+                    Interlocked.CompareExchange(ref firstError, compileResult, 0);
+                    await cts.CancelAsync();
+                }
+            });
+        }
+        catch (OperationCanceledException) when (!failedFile.IsEmpty)
+        {
+            // Cancelled due to compilation failure
+        }
+
+        if (!failedFile.IsEmpty)
+        {
+            foreach (var file in failedFile)
+            {
+                _console.WriteErrorLine($"Compilation failed for: {file}");
             }
+            return new BuildResult(false, null, firstError);
         }
 
         // Link/Archive phase

@@ -23,8 +23,8 @@ internal sealed class BuildService
     {
         workingDir ??= Directory.GetCurrentDirectory();
 
-        var srcDir = Path.Combine(workingDir, config.SrcDir);
-        var outDir = Path.Combine(workingDir, config.OutDir);
+        var srcDir = Path.Combine(workingDir, config.SrcDir ?? "src");
+        var outDir = Path.Combine(workingDir, config.OutDir ?? "out");
         var objDir = Path.Combine(outDir, "obj");
 
         Directory.CreateDirectory(outDir);
@@ -41,7 +41,8 @@ internal sealed class BuildService
 
         // Collect flags
         var compileFlags = CollectCompileFlags(config, modeConfig, platformConfig, artifactTypeConfig);
-        var includeFlags = config.IncludeDirs.Select(dir => $"-I{Path.Combine(workingDir, dir)}");
+        var includeDirs = config.IncludeDirs ?? [];
+        var includeFlags = includeDirs.Select(dir => $"-I{Path.Combine(workingDir, dir)}");
         var defineFlags = CollectDefines(config, modeConfig, platformConfig).Select(d => $"-D{d}");
 
         var allCompileFlags = compileFlags
@@ -49,23 +50,28 @@ internal sealed class BuildService
             .Concat(defineFlags)
             .ToList();
 
+        var compilerExe = config.CompilerExe ?? "gcc";
+        var compileFlag = config.CompileFlag ?? "-c";
+        var compileOutputFormat = config.CompileOutputFormat ?? "-o {0}";
+        var objectExtension = platformConfig.ObjectExtension ?? ".o";
+
         // Compile phase
         var objectFiles = new List<string>();
         foreach (var sourceFile in sourceFiles)
         {
             var relativePath = Path.GetRelativePath(srcDir, sourceFile);
-            var objectFileName = Path.ChangeExtension(relativePath, platformConfig.ObjectExtension)
+            var objectFileName = Path.ChangeExtension(relativePath, objectExtension)
                 .Replace(Path.DirectorySeparatorChar, '_');
             var objectFile = Path.Combine(objDir, objectFileName);
             objectFiles.Add(objectFile);
 
             _console.WriteLine($"  Compiling: {relativePath}");
 
-            var compileArgs = new List<string> { config.CompileFlag, sourceFile };
-            compileArgs.AddRange(FormatToArgs(config.CompileOutputFormat, objectFile));
+            var compileArgs = new List<string> { compileFlag, sourceFile };
+            compileArgs.AddRange(FormatToArgs(compileOutputFormat, objectFile));
             compileArgs.AddRange(allCompileFlags);
 
-            var compileResult = await RunProcessAsync(config.CompilerExe, compileArgs, workingDir, cancellationToken);
+            var compileResult = await RunProcessAsync(compilerExe, compileArgs, workingDir, cancellationToken);
             if (compileResult != 0)
             {
                 _console.WriteErrorLine($"Compilation failed for: {relativePath}");
@@ -92,28 +98,36 @@ internal sealed class BuildService
         string workingDir,
         CancellationToken cancellationToken)
     {
-        var extension = config.ArtifactType switch
+        var artifactType = config.ArtifactType ?? "executable";
+        var extension = artifactType switch
         {
-            "shared_library" => platformConfig.SharedLibExtension,
-            _ => platformConfig.ArtifactExtension
+            "shared_library" => platformConfig.SharedLibExtension ?? ".so",
+            _ => platformConfig.ArtifactExtension ?? ""
         };
-        var artifactPath = Path.Combine(outDir, config.ArtifactName + extension);
+        var artifactName = config.ArtifactName ?? "a";
+        var artifactPath = Path.Combine(outDir, artifactName + extension);
 
         _console.WriteLine($"  Linking: {Path.GetFileName(artifactPath)}");
 
         var linkFlags = CollectLinkFlags(config, modeConfig, platformConfig, artifactTypeConfig);
         var libDirs = platformConfig.LibDirs ?? [];
-        var libDirFlags = libDirs.Select(dir => string.Format(config.LibDirFormat, Path.Combine(workingDir, dir)));
-        var libFlags = platformConfig.Libs.Select(lib => string.Format(config.LibFormat, lib));
+        var libs = platformConfig.Libs ?? [];
+        var libDirFormat = config.LibDirFormat ?? "-L{0}";
+        var libFormat = config.LibFormat ?? "-l{0}";
+        var linkOutputFormat = config.LinkOutputFormat ?? "-o {0}";
+        var compilerExe = config.CompilerExe ?? "gcc";
+
+        var libDirFlags = libDirs.Select(dir => string.Format(libDirFormat, Path.Combine(workingDir, dir)));
+        var libFlags = libs.Select(lib => string.Format(libFormat, lib));
 
         var linkArgs = new List<string>();
         linkArgs.AddRange(objectFiles);
-        linkArgs.AddRange(FormatToArgs(config.LinkOutputFormat, artifactPath));
+        linkArgs.AddRange(FormatToArgs(linkOutputFormat, artifactPath));
         linkArgs.AddRange(linkFlags);
         linkArgs.AddRange(libDirFlags);
         linkArgs.AddRange(libFlags);
 
-        var linkResult = await RunProcessAsync(config.CompilerExe, linkArgs, workingDir, cancellationToken);
+        var linkResult = await RunProcessAsync(compilerExe, linkArgs, workingDir, cancellationToken);
         if (linkResult != 0)
         {
             _console.WriteErrorLine("Linking failed");
@@ -133,7 +147,9 @@ internal sealed class BuildService
         string workingDir,
         CancellationToken cancellationToken)
     {
-        var artifactPath = Path.Combine(outDir, "lib" + config.ArtifactName + platformConfig.StaticLibExtension);
+        var artifactName = config.ArtifactName ?? "a";
+        var staticLibExtension = platformConfig.StaticLibExtension ?? ".a";
+        var artifactPath = Path.Combine(outDir, "lib" + artifactName + staticLibExtension);
 
         _console.WriteLine($"  Archiving: {Path.GetFileName(artifactPath)}");
 

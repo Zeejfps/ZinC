@@ -39,21 +39,25 @@ internal abstract class BuildCommandAction : ZincCommandAction
             return 1;
         }
 
-        if (!config.Modes.TryGetValue(mode, out var modeConfig))
+        var modes = config.Modes ?? [];
+        if (!modes.TryGetValue(mode, out var modeConfig))
         {
-            WriteErrorLine($"Unknown mode: {mode}. Available: {string.Join(", ", config.Modes.Keys)}");
+            WriteErrorLine($"Unknown mode: {mode}. Available: {string.Join(", ", modes.Keys)}");
             return 1;
         }
 
-        if (!config.Platforms.TryGetValue(platform, out var platformConfig))
+        var platforms = config.Platforms ?? [];
+        if (!platforms.TryGetValue(platform, out var platformConfig))
         {
-            WriteErrorLine($"Unknown platform: {platform}. Available: {string.Join(", ", config.Platforms.Keys)}");
+            WriteErrorLine($"Unknown platform: {platform}. Available: {string.Join(", ", platforms.Keys)}");
             return 1;
         }
 
-        if (!config.ArtifactTypes.TryGetValue(config.ArtifactType, out var artifactTypeConfig))
+        var artifactTypes = config.ArtifactTypes ?? [];
+        var artifactType = config.ArtifactType ?? "executable";
+        if (!artifactTypes.TryGetValue(artifactType, out var artifactTypeConfig))
         {
-            WriteErrorLine($"Unknown artifact type: {config.ArtifactType}. Available: {string.Join(", ", config.ArtifactTypes.Keys)}");
+            WriteErrorLine($"Unknown artifact type: {artifactType}. Available: {string.Join(", ", artifactTypes.Keys)}");
             return 1;
         }
 

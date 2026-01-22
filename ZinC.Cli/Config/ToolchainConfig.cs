@@ -5,55 +5,55 @@ namespace ZinC.Cli.Config;
 internal sealed record ToolchainConfig
 {
     [JsonPropertyName("artifact_name")]
-    public string ArtifactName { get; init; } = "program";
+    public string? ArtifactName { get; init; }
 
     [JsonPropertyName("artifact_type")]
-    public string ArtifactType { get; init; } = "executable";
+    public string? ArtifactType { get; init; }
 
     [JsonPropertyName("compiler_exe")]
-    public string CompilerExe { get; init; } = "gcc";
+    public string? CompilerExe { get; init; }
 
     [JsonPropertyName("lib_dir_format")]
-    public string LibDirFormat { get; init; } = "-L{0}";
+    public string? LibDirFormat { get; init; }
 
     [JsonPropertyName("lib_format")]
-    public string LibFormat { get; init; } = "-l{0}";
+    public string? LibFormat { get; init; }
 
     [JsonPropertyName("compile_flag")]
-    public string CompileFlag { get; init; } = "-c";
+    public string? CompileFlag { get; init; }
 
     [JsonPropertyName("compile_output_format")]
-    public string CompileOutputFormat { get; init; } = "-o {0}";
+    public string? CompileOutputFormat { get; init; }
 
     [JsonPropertyName("link_output_format")]
-    public string LinkOutputFormat { get; init; } = "-o {0}";
+    public string? LinkOutputFormat { get; init; }
 
     [JsonPropertyName("src_dir")]
-    public string SrcDir { get; init; } = "src";
+    public string? SrcDir { get; init; }
 
     [JsonPropertyName("out_dir")]
-    public string OutDir { get; init; } = "out";
+    public string? OutDir { get; init; }
 
     [JsonPropertyName("include_dirs")]
-    public List<string> IncludeDirs { get; init; } = [];
+    public List<string>? IncludeDirs { get; init; }
 
     [JsonPropertyName("flags")]
-    public List<string> Flags { get; init; } = [];
+    public List<string>? Flags { get; init; }
 
     [JsonPropertyName("link_flags")]
-    public List<string> LinkFlags { get; init; } = [];
+    public List<string>? LinkFlags { get; init; }
 
     [JsonPropertyName("defines")]
-    public List<string> Defines { get; init; } = [];
+    public List<string>? Defines { get; init; }
 
     [JsonPropertyName("modes")]
-    public Dictionary<string, ModeConfig> Modes { get; init; } = [];
+    public Dictionary<string, ModeConfig>? Modes { get; init; }
 
     [JsonPropertyName("platforms")]
-    public Dictionary<string, PlatformConfig> Platforms { get; init; } = [];
+    public Dictionary<string, PlatformConfig>? Platforms { get; init; }
 
     [JsonPropertyName("artifact_types")]
-    public Dictionary<string, ArtifactTypeConfig> ArtifactTypes { get; init; } = [];
+    public Dictionary<string, ArtifactTypeConfig>? ArtifactTypes { get; init; }
 }
 
 internal sealed record ModeConfig
@@ -71,31 +71,31 @@ internal sealed record ModeConfig
 internal sealed record PlatformConfig
 {
     [JsonPropertyName("artifact_extension")]
-    public string ArtifactExtension { get; init; } = "";
+    public string? ArtifactExtension { get; init; }
 
     [JsonPropertyName("static_lib_extension")]
-    public string StaticLibExtension { get; init; } = ".a";
+    public string? StaticLibExtension { get; init; }
 
     [JsonPropertyName("shared_lib_extension")]
-    public string SharedLibExtension { get; init; } = ".so";
+    public string? SharedLibExtension { get; init; }
 
     [JsonPropertyName("object_extension")]
-    public string ObjectExtension { get; init; } = ".o";
+    public string? ObjectExtension { get; init; }
 
     [JsonPropertyName("defines")]
-    public List<string> Defines { get; init; } = [];
+    public List<string>? Defines { get; init; }
 
     [JsonPropertyName("flags")]
-    public List<string> Flags { get; init; } = [];
+    public List<string>? Flags { get; init; }
 
     [JsonPropertyName("libs")]
-    public List<string> Libs { get; init; } = [];
+    public List<string>? Libs { get; init; }
 
     [JsonPropertyName("lib_dirs")]
     public List<string>? LibDirs { get; init; }
 
     [JsonPropertyName("link_flags")]
-    public List<string> LinkFlags { get; init; } = [];
+    public List<string>? LinkFlags { get; init; }
 }
 
 internal sealed record ArtifactTypeConfig

@@ -13,21 +13,18 @@ internal sealed class RunAction : BuildCommandAction
 
     protected override async Task<int> ExecuteAsync(BuildContext context, CancellationToken cancellationToken)
     {
-        if (context.Config.ArtifactType != "executable")
+        var artifactType = context.ProjectConfig.ArtifactType ?? "executable";
+        if (artifactType != "executable")
         {
-            WriteErrorLine($"Cannot run artifact type: {context.Config.ArtifactType}. Only executables can be run.");
+            WriteErrorLine($"Cannot run artifact type: {artifactType}. Only executables can be run.");
             return 1;
         }
 
-        WriteLine($"Building {context.Config.ArtifactName} ({context.Mode}/{context.Platform})");
+        var artifactName = context.ProjectConfig.ArtifactName ?? "a";
+        WriteLine($"Building {artifactName} ({context.Mode}/{context.Platform})");
 
         var buildService = new BuildService(Console);
-        var buildResult = await buildService.BuildAsync(
-            context.Config,
-            context.ModeConfig,
-            context.PlatformConfig,
-            context.ArtifactTypeConfig,
-            cancellationToken: cancellationToken);
+        var buildResult = await buildService.BuildAsync(context, cancellationToken: cancellationToken);
 
         if (!buildResult.Success || buildResult.ArtifactPath is null)
         {

@@ -11,15 +11,11 @@ internal sealed class BuildAction : BuildCommandAction
 
     protected override async Task<int> ExecuteAsync(BuildContext context, CancellationToken cancellationToken)
     {
-        WriteLine($"Building {context.Config.ArtifactName} ({context.Mode}/{context.Platform})");
+        var artifactName = context.ProjectConfig.ArtifactName ?? "a";
+        WriteLine($"Building {artifactName} ({context.Mode}/{context.Platform})");
 
         var buildService = new BuildService(Console);
-        var result = await buildService.BuildAsync(
-            context.Config,
-            context.ModeConfig,
-            context.PlatformConfig,
-            context.ArtifactTypeConfig,
-            cancellationToken: cancellationToken);
+        var result = await buildService.BuildAsync(context, cancellationToken: cancellationToken);
 
         return result.ExitCode;
     }

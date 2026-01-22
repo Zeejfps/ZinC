@@ -1,10 +1,4 @@
 {
-  "artifact_name": "a",
-  "artifact_type": "executable",
-  "src_dir": "src",
-  "out_dir": "out",
-  "include_dirs": ["include"],
-
   "compiler_exe": "cl",
   "lib_dir_format": "/LIBPATH:{0}",
   "lib_format": "{0}.lib",

@@ -1,60 +1,102 @@
-﻿using System.Text.Json;
+using System.Text.Json;
+using ZinC.Cli.Resources;
 
 namespace ZinC.Cli.Config;
 
 internal sealed class ToolchainConfigService
 {
-    private const string DefaultConfigFileName = "zinc.json";
+    private readonly EmbeddedResourcesService _embeddedResources;
 
-    public ToolchainConfig? Load(string? configPath = null, string? workingDirectory = null)
+    public ToolchainConfigService()
     {
-        var path = ResolveConfigPath(configPath, workingDirectory);
-
-        if (!File.Exists(path))
-        {
-            return null;
-        }
-
-        var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize(json, ToolchainConfigJsonContext.Default.ToolchainConfig);
+        _embeddedResources = new EmbeddedResourcesService();
     }
 
-    public async Task<ToolchainConfig?> LoadAsync(string? configPath = null, string? workingDirectory = null, CancellationToken cancellationToken = default)
+    public ToolchainConfig? Load(string toolchainName, string? workingDirectory = null)
     {
-        var path = ResolveConfigPath(configPath, workingDirectory);
+        var configPath = ResolveConfigPath(toolchainName, workingDirectory);
 
-        if (!File.Exists(path))
+        // Try loading from file first
+        if (File.Exists(configPath))
         {
-            return null;
+            var json = File.ReadAllText(configPath);
+            return JsonSerializer.Deserialize(json, ToolchainConfigJsonContext.Default.ToolchainConfig);
         }
 
-        await using var stream = File.OpenRead(path);
-        return await JsonSerializer.DeserializeAsync(stream, ToolchainConfigJsonContext.Default.ToolchainConfig, cancellationToken);
+        // Fall back to embedded resource
+        return LoadFromEmbedded(toolchainName);
     }
 
-    public void Save(ToolchainConfig config, string? configPath = null, string? workingDirectory = null)
+    public async Task<ToolchainConfig?> LoadAsync(string toolchainName, string? workingDirectory = null, CancellationToken cancellationToken = default)
     {
-        var path = ResolveConfigPath(configPath, workingDirectory);
+        var configPath = ResolveConfigPath(toolchainName, workingDirectory);
+
+        // Try loading from file first
+        if (File.Exists(configPath))
+        {
+            await using var stream = File.OpenRead(configPath);
+            return await JsonSerializer.DeserializeAsync(stream, ToolchainConfigJsonContext.Default.ToolchainConfig, cancellationToken);
+        }
+
+        // Fall back to embedded resource
+        return await LoadFromEmbeddedAsync(toolchainName, cancellationToken);
+    }
+
+    public void Save(ToolchainConfig config, string toolchainName, string? workingDirectory = null)
+    {
+        var path = ResolveConfigPath(toolchainName, workingDirectory);
         var json = JsonSerializer.Serialize(config, ToolchainConfigJsonContext.Default.ToolchainConfig);
         File.WriteAllText(path, json);
     }
 
-    public async Task SaveAsync(ToolchainConfig config, string? configPath = null, string? workingDirectory = null, CancellationToken cancellationToken = default)
+    public async Task SaveAsync(ToolchainConfig config, string toolchainName, string? workingDirectory = null, CancellationToken cancellationToken = default)
     {
-        var path = ResolveConfigPath(configPath, workingDirectory);
+        var path = ResolveConfigPath(toolchainName, workingDirectory);
         await using var stream = File.Create(path);
         await JsonSerializer.SerializeAsync(stream, config, ToolchainConfigJsonContext.Default.ToolchainConfig, cancellationToken);
     }
 
-    private static string ResolveConfigPath(string? configPath, string? workingDirectory)
+    public ToolchainConfig? LoadFromEmbedded(string toolchainName)
     {
-        if (!string.IsNullOrEmpty(configPath))
-        {
-            return Path.IsPathRooted(configPath)
-                ? configPath
-                : Path.Combine(workingDirectory ?? Directory.GetCurrentDirectory(), configPath);
-        }
+        var resourceName = $"{toolchainName}.json";
+        var json = _embeddedResources.ReadResourceAsString(resourceName);
+        if (json is null)
+            return null;
 
-        return Path.Combine(workingDirectory ?? Directory.GetCurrentDirectory(), DefaultConfigFileName);
+        return JsonSerializer.Deserialize(json, ToolchainConfigJsonContext.Default.ToolchainConfig);
+    }
+
+    public async Task<ToolchainConfig?> LoadFromEmbeddedAsync(string toolchainName, CancellationToken cancellationToken = default)
+    {
+        var resourceName = $"{toolchainName}.json";
+        var json = await _embeddedResources.ReadResourceAsStringAsync(resourceName, cancellationToken);
+        if (json is null)
+            return null;
+
+        return JsonSerializer.Deserialize(json, ToolchainConfigJsonContext.Default.ToolchainConfig);
+    }
+
+    public bool EmbeddedExists(string toolchainName)
+    {
+        return _embeddedResources.ResourceExists($"{toolchainName}.json");
+    }
+
+    public IEnumerable<string> ListEmbeddedToolchains()
+    {
+        return _embeddedResources
+            .ListResources()
+            .Where(r => r.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            .Select(r => Path.GetFileNameWithoutExtension(r));
+    }
+
+    private static string ResolveConfigPath(string toolchainName, string? workingDirectory)
+    {
+        var fileName = toolchainName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+            ? toolchainName
+            : $"{toolchainName}.json";
+
+        return Path.IsPathRooted(fileName)
+            ? fileName
+            : Path.Combine(workingDirectory ?? Directory.GetCurrentDirectory(), fileName);
     }
 }

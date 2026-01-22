@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Help;
 using ZinC.Cli.Build;
+using ZinC.Cli.Configure;
 using ZinC.Cli.Console;
 using ZinC.Cli.Extensions;
 using ZinC.Cli.Logging;
@@ -11,18 +12,12 @@ var console = new DefaultConsole();
 var logger = new ConsoleLogger();
 
 var projectTypeArg = new ProjectTypeArgument("project-type");
-var initAction = new SetupAction(console, logger)
+var setupAction = new SetupAction(console, logger)
 {
     ProjectTypeArgument = projectTypeArg,
     ArtifactNameOption = new Option<string>("--name", "-n")
     {
-        Required = true,
         Description = "The name of the artifact."
-    },
-    CompilerOption = new Option<string>("--compiler", "-c")
-    {
-        Required = true,
-        Description = "The compiler to use.",
     }
 };
 
@@ -38,24 +33,31 @@ var platformOption = new Option<string>("--platform", "-p")
     Required = true
 };
 
-var configOption = new Option<string>("--config", "-c")
+var toolchainOption = new Option<string>("--toolchain", "-t", "gcc")
 {
-    Description = "The configuration to use.",
-    Required = true
+    Description = "The toolchain to use (gcc, msvc, etc.)"
 };
 
 var buildAction = new BuildAction(console, logger)
 {
     ModeOption = modeOption,
     PlatformOption = platformOption,
-    ConfigOption = configOption,
+    ToolchainOption = toolchainOption,
 };
 
 var runAction = new RunAction(console, logger)
 {
     ModeOption = modeOption,
     PlatformOption = platformOption,
-    ConfigOption = configOption,
+    ToolchainOption = toolchainOption,
+};
+
+var configureAction = new ConfigureAction(console, logger)
+{
+    ToolchainArgument = new Argument<string>("toolchain")
+    {
+        Description = "The toolchain to eject (gcc, msvc, etc.)"
+    }
 };
 
 var rootCommand = new RootCommand("The simplest 'C' build tool around.")
@@ -64,13 +66,16 @@ var rootCommand = new RootCommand("The simplest 'C' build tool around.")
     Subcommands =
     {
         new Command("setup", "Sets up a new project.")
-            .WithAction(initAction),
+            .WithAction(setupAction),
         
         new Command("build", "Builds the project.")
             .WithAction(buildAction),
         
         new Command("run","Builds and runs the project.")
             .WithAction(runAction),
+
+        new Command("configure", "Ejects a toolchain config for customization.")
+            .WithAction(configureAction),
     }
 };
 

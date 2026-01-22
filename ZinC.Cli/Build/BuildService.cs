@@ -22,17 +22,21 @@ internal sealed class BuildService
     }
 
     public async Task<BuildResult> BuildAsync(
-        ToolchainConfig config,
-        ModeConfig modeConfig,
-        PlatformConfig platformConfig,
-        ArtifactTypeConfig artifactTypeConfig,
+        BuildContext context,
         string? workingDir = null,
         CancellationToken cancellationToken = default)
     {
         workingDir ??= Directory.GetCurrentDirectory();
 
-        var srcDir = Path.Combine(workingDir, config.SrcDir ?? "src");
-        var outDir = Path.Combine(workingDir, config.OutDir ?? "out");
+        var project = context.ProjectConfig;
+        var projectPlatform = context.ProjectPlatformConfig;
+        var toolchain = context.ToolchainConfig;
+        var mode = context.ModeConfig;
+        var platform = context.PlatformConfig;
+        var artifactType = context.ArtifactTypeConfig;
+
+        var srcDir = Path.Combine(workingDir, project.SrcDir ?? "src");
+        var outDir = Path.Combine(workingDir, project.OutDir ?? "out");
         var objDir = Path.Combine(outDir, "obj");
 
         Directory.CreateDirectory(outDir);
@@ -47,21 +51,31 @@ internal sealed class BuildService
 
         _console.WriteLine($"Found {sourceFiles.Length} source file(s)");
 
-        // Collect flags
-        var compileFlags = CollectCompileFlags(config, modeConfig, platformConfig, artifactTypeConfig);
-        var includeDirs = config.IncludeDirs ?? [];
+        // Collect flags from toolchain
+        var compileFlags = CollectCompileFlags(toolchain, mode, platform, artifactType);
+
+        // Collect include dirs from project (base + platform-specific)
+        var includeDirs = Collect(project.IncludeDirs, projectPlatform?.IncludeDirs);
         var includeFlags = includeDirs.Select(dir => $"-I{Path.Combine(workingDir, dir)}");
-        var defineFlags = CollectDefines(config, modeConfig, platformConfig).Select(d => $"-D{d}");
+
+        // Collect defines from both toolchain and project
+        var defines = Collect(
+            toolchain.Defines,
+            mode.Defines,
+            platform.Defines,
+            project.Defines,
+            projectPlatform?.Defines);
+        var defineFlags = defines.Select(d => $"-D{d}");
 
         var allCompileFlags = compileFlags
             .Concat(includeFlags)
             .Concat(defineFlags)
             .ToList();
 
-        var compilerExe = config.CompilerExe!;
-        var compileFlag = config.CompileFlag!;
-        var compileOutputFormat = config.CompileOutputFormat!;
-        var objectExtension = platformConfig.ObjectExtension ?? ".o";
+        var compilerExe = toolchain.CompilerExe!;
+        var compileFlag = toolchain.CompileFlag!;
+        var compileOutputFormat = toolchain.CompileOutputFormat!;
+        var objectExtension = platform.ObjectExtension ?? ".o";
 
         var objectFiles = new List<string>();
         var compilationUnits = new List<CompilationUnit>();
@@ -80,7 +94,7 @@ internal sealed class BuildService
             });
             objectFiles.Add(objectFile);
         }
-        
+
         // Compile phase (parallel)
         var failedFile = new ConcurrentBag<string>();
         var firstError = 0;
@@ -127,42 +141,51 @@ internal sealed class BuildService
         }
 
         // Link/Archive phase
-        if (artifactTypeConfig.UseArchiver)
+        if (artifactType.UseArchiver)
         {
-            return await ArchiveAsync(config, platformConfig, artifactTypeConfig, objectFiles, outDir, workingDir, cancellationToken);
+            return await ArchiveAsync(context, objectFiles, outDir, workingDir, cancellationToken);
         }
 
-        return await LinkAsync(config, modeConfig, platformConfig, artifactTypeConfig, objectFiles, outDir, workingDir, cancellationToken);
+        return await LinkAsync(context, objectFiles, outDir, workingDir, cancellationToken);
     }
 
     private async Task<BuildResult> LinkAsync(
-        ToolchainConfig config,
-        ModeConfig modeConfig,
-        PlatformConfig platformConfig,
-        ArtifactTypeConfig artifactTypeConfig,
+        BuildContext context,
         List<string> objectFiles,
         string outDir,
         string workingDir,
         CancellationToken cancellationToken)
     {
-        var artifactType = config.ArtifactType ?? "executable";
-        var extension = artifactType switch
+        var project = context.ProjectConfig;
+        var projectPlatform = context.ProjectPlatformConfig;
+        var toolchain = context.ToolchainConfig;
+        var mode = context.ModeConfig;
+        var platform = context.PlatformConfig;
+        var artifactType = context.ArtifactTypeConfig;
+
+        var artifactTypeStr = project.ArtifactType ?? "executable";
+        var extension = artifactTypeStr switch
         {
-            "shared_library" => platformConfig.SharedLibExtension ?? ".so",
-            _ => platformConfig.ArtifactExtension ?? ""
+            "shared_library" => platform.SharedLibExtension ?? ".so",
+            _ => platform.ArtifactExtension ?? ""
         };
-        var artifactName = config.ArtifactName ?? "a";
+        var artifactName = project.ArtifactName ?? "a";
         var artifactPath = Path.Combine(outDir, artifactName + extension);
 
         _console.WriteLine($"  Linking: {Path.GetFileName(artifactPath)}");
 
-        var linkFlags = CollectLinkFlags(config, modeConfig, platformConfig, artifactTypeConfig);
-        var libDirs = platformConfig.LibDirs ?? [];
-        var libs = platformConfig.Libs ?? [];
-        var libDirFormat = config.LibDirFormat!;
-        var libFormat = config.LibFormat!;
-        var linkOutputFormat = config.LinkOutputFormat!;
-        var compilerExe = config.CompilerExe!;
+        var linkFlags = CollectLinkFlags(toolchain, mode, platform, artifactType);
+
+        // Merge lib_dirs from toolchain platform and project
+        var libDirs = Collect(platform.LibDirs, project.LibDirs, projectPlatform?.LibDirs);
+
+        // Merge libs from toolchain platform and project
+        var libs = Collect(platform.Libs, project.Libs, projectPlatform?.Libs);
+
+        var libDirFormat = toolchain.LibDirFormat!;
+        var libFormat = toolchain.LibFormat!;
+        var linkOutputFormat = toolchain.LinkOutputFormat!;
+        var compilerExe = toolchain.CompilerExe!;
 
         var libDirFlags = libDirs.Select(dir => string.Format(libDirFormat, Path.Combine(workingDir, dir)));
         var libFlags = libs.Select(lib => string.Format(libFormat, lib));
@@ -186,23 +209,25 @@ internal sealed class BuildService
     }
 
     private async Task<BuildResult> ArchiveAsync(
-        ToolchainConfig config,
-        PlatformConfig platformConfig,
-        ArtifactTypeConfig artifactTypeConfig,
+        BuildContext context,
         List<string> objectFiles,
         string outDir,
         string workingDir,
         CancellationToken cancellationToken)
     {
-        var artifactName = config.ArtifactName ?? "a";
-        var staticLibExtension = platformConfig.StaticLibExtension ?? ".a";
+        var project = context.ProjectConfig;
+        var platform = context.PlatformConfig;
+        var artifactType = context.ArtifactTypeConfig;
+
+        var artifactName = project.ArtifactName ?? "a";
+        var staticLibExtension = platform.StaticLibExtension ?? ".a";
         var artifactPath = Path.Combine(outDir, "lib" + artifactName + staticLibExtension);
 
         _console.WriteLine($"  Archiving: {Path.GetFileName(artifactPath)}");
 
         var archiveArgs = new List<string>();
-        if (artifactTypeConfig.ArchiverFlags is not null)
-            archiveArgs.AddRange(artifactTypeConfig.ArchiverFlags);
+        if (artifactType.ArchiverFlags is not null)
+            archiveArgs.AddRange(artifactType.ArchiverFlags);
         archiveArgs.Add(artifactPath);
         archiveArgs.AddRange(objectFiles);
 
@@ -218,40 +243,29 @@ internal sealed class BuildService
     }
 
     private static List<string> CollectCompileFlags(
-        ToolchainConfig config,
-        ModeConfig modeConfig,
-        PlatformConfig platformConfig,
-        ArtifactTypeConfig artifactTypeConfig)
+        ToolchainConfig toolchain,
+        ModeConfig mode,
+        PlatformConfig platform,
+        ArtifactTypeConfig artifactType)
     {
         return Collect(
-            config.Flags,
-            modeConfig.Flags,
-            platformConfig.Flags,
-            artifactTypeConfig.Flags);
-    }
-
-    private static List<string> CollectDefines(
-        ToolchainConfig config,
-        ModeConfig modeConfig,
-        PlatformConfig platformConfig)
-    {
-        return Collect(
-            config.Defines,
-            modeConfig.Defines,
-            platformConfig.Defines);
+            toolchain.Flags,
+            mode.Flags,
+            platform.Flags,
+            artifactType.Flags);
     }
 
     private static List<string> CollectLinkFlags(
-        ToolchainConfig config,
-        ModeConfig modeConfig,
-        PlatformConfig platformConfig,
-        ArtifactTypeConfig artifactTypeConfig)
+        ToolchainConfig toolchain,
+        ModeConfig mode,
+        PlatformConfig platform,
+        ArtifactTypeConfig artifactType)
     {
         return Collect(
-            config.LinkFlags,
-            modeConfig.LinkFlags,
-            platformConfig.LinkFlags,
-            artifactTypeConfig.LinkFlags);
+            toolchain.LinkFlags,
+            mode.LinkFlags,
+            platform.LinkFlags,
+            artifactType.LinkFlags);
     }
 
     private static List<string> Collect(params IEnumerable<string>?[] sources)

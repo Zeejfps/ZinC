@@ -1,31 +1,17 @@
-﻿using System.CommandLine;
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using System.CommandLine;
+using ZinC.Cli.Config;
 using ZinC.Cli.Console;
 using ZinC.Cli.Logging;
-using ZinC.Cli.Resources;
 
 namespace ZinC.Cli.Setup;
 
 internal sealed class SetupAction : ZincCommandAction
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true
-    };
-
-    private readonly EmbeddedResourcesService _resources = new();
-
     public required Argument<ProjectType> ProjectTypeArgument { get; init; }
     public required Option<string> ArtifactNameOption { get; init; }
-    public required Option<string> CompilerOption { get; init; }
 
     public override Argument[] Arguments => [ProjectTypeArgument];
-    public override Option[] Options =>
-    [
-        ArtifactNameOption,
-        CompilerOption
-    ];
+    public override Option[] Options => [ArtifactNameOption];
 
     public SetupAction(IConsole console, ILogger logger) : base(console, logger) { }
 
@@ -33,27 +19,17 @@ internal sealed class SetupAction : ZincCommandAction
     {
         var projectType = parseResult.GetRequiredValue(ProjectTypeArgument);
         var artifactName = parseResult.GetValue(ArtifactNameOption);
-        var compiler = parseResult.GetValue(CompilerOption) ?? "gcc";
 
-        // Load the compiler config from embedded resources
-        var configJson = await _resources.ReadResourceAsStringAsync($"{compiler}.json", cancellationToken);
-        if (configJson is null)
+        // Check if project config already exists
+        var configPath = Path.Combine(Directory.GetCurrentDirectory(), "zinc.json");
+        if (File.Exists(configPath))
         {
-            WriteErrorLine($"Unknown compiler: {compiler}");
-            WriteErrorLine($"Available compilers: {string.Join(", ", _resources.ListResources().Select(Path.GetFileNameWithoutExtension))}");
+            WriteErrorLine($"Project config already exists: zinc.json");
             return 1;
         }
 
-        var config = JsonNode.Parse(configJson)!.AsObject();
-
-        // Update artifact name if provided
-        if (artifactName is not null)
-        {
-            config["artifact_name"] = artifactName;
-        }
-
-        // Update artifact type based on project type
-        config["artifact_type"] = projectType switch
+        // Determine artifact type based on project type
+        var artifactType = projectType switch
         {
             ProjectType.Executable => "executable",
             ProjectType.StaticLibrary => "static_library",
@@ -61,34 +37,41 @@ internal sealed class SetupAction : ZincCommandAction
             _ => throw new ArgumentOutOfRangeException(nameof(projectType))
         };
 
-        // Get directory paths from config
-        var srcDir = config["src_dir"]?.GetValue<string>() ?? "src";
-        var outDir = config["out_dir"]?.GetValue<string>() ?? "out";
-        var includeDirs = config["include_dirs"]?.AsArray()
-            .Select(n => n!.GetValue<string>())
-            .ToArray() ?? ["include"];
+        // Create project config
+        var projectConfig = new ProjectConfig
+        {
+            ArtifactName = artifactName,
+            ArtifactType = artifactType,
+            SrcDir = "src",
+            OutDir = "out",
+            IncludeDirs = ["include"],
+            Libs = [],
+            LibDirs = [],
+            Defines = []
+        };
 
         // Create directories
-        Directory.CreateDirectory(srcDir);
-        Directory.CreateDirectory(outDir);
-        foreach (var includeDir in includeDirs)
-        {
-            Directory.CreateDirectory(includeDir);
-        }
+        Directory.CreateDirectory("src");
+        Directory.CreateDirectory("out");
+        Directory.CreateDirectory("include");
 
-        // Write the config file
-        var outputJson = config.ToJsonString(JsonOptions);
-        await File.WriteAllTextAsync($"{compiler}.json", outputJson, cancellationToken);
+        // Write project config
+        var projectConfigService = new ProjectConfigService();
+        await projectConfigService.SaveAsync(projectConfig, cancellationToken: cancellationToken);
 
-        WriteLine($"Created project with {compiler} compiler");
-        WriteLine($"  Type: {projectType}");
-        WriteLine($"  Config: {compiler}.json");
-        WriteLine($"  Source: {srcDir}/");
-        WriteLine($"  Output: {outDir}/");
-        foreach (var includeDir in includeDirs)
+        WriteLine($"Created project");
+        WriteLine($"  Type: {artifactType}");
+        if (artifactName is not null)
         {
-            WriteLine($"  Include: {includeDir}/");
+            WriteLine($"  Name: {artifactName}");
         }
+        WriteLine($"  Config: zinc.json");
+        WriteLine($"  Source: src/");
+        WriteLine($"  Include: include/");
+        WriteLine($"  Output: out/");
+        WriteLine("");
+        WriteLine("To build: zinc build -m debug -p windows");
+        WriteLine("To run:   zinc run -m debug -p windows");
 
         return 0;
     }

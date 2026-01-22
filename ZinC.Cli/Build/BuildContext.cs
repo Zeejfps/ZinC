@@ -3,7 +3,9 @@ using ZinC.Cli.Config;
 namespace ZinC.Cli.Build;
 
 internal sealed record BuildContext(
-    ToolchainConfig Config,
+    ProjectConfig ProjectConfig,
+    ProjectPlatformConfig? ProjectPlatformConfig,
+    ToolchainConfig ToolchainConfig,
     ModeConfig ModeConfig,
     PlatformConfig PlatformConfig,
     ArtifactTypeConfig ArtifactTypeConfig,

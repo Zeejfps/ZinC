@@ -9,9 +9,9 @@ internal abstract class BuildCommandAction : ZincCommandAction
 {
     public required Option<string> ModeOption { get; init; }
     public required Option<string> PlatformOption { get; init; }
-    public required Option<string> ConfigOption { get; init; }
+    public required Option<string> ToolchainOption { get; init; }
 
-    public override Option[] Options => [ModeOption, PlatformOption, ConfigOption];
+    public override Option[] Options => [ModeOption, PlatformOption, ToolchainOption];
 
     protected IConsole Console { get; }
 
@@ -24,51 +24,70 @@ internal abstract class BuildCommandAction : ZincCommandAction
     {
         var mode = parseResult.GetRequiredValue(ModeOption);
         var platform = parseResult.GetRequiredValue(PlatformOption);
-        var configPath = parseResult.GetRequiredValue(ConfigOption);
+        var toolchainName = parseResult.GetRequiredValue(ToolchainOption);
 
-        if (!configPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+        // Load project config from zinc.json
+        var projectConfigService = new ProjectConfigService();
+        var projectConfig = await projectConfigService.LoadAsync(cancellationToken: cancellationToken);
+        if (projectConfig is null)
         {
-            configPath += ".json";
-        }
-
-        var configService = new ToolchainConfigService();
-        var config = await configService.LoadAsync(configPath, cancellationToken: cancellationToken);
-        if (config is null)
-        {
-            WriteErrorLine($"Config file not found: {configPath}");
+            WriteErrorLine("Project config not found: zinc.json");
             return 1;
         }
 
-        var missingProperties = ValidateRequiredProperties(config);
+        // Load toolchain config (file first, then embedded fallback)
+        var toolchainConfigService = new ToolchainConfigService();
+        var toolchainConfig = await toolchainConfigService.LoadAsync(toolchainName, cancellationToken: cancellationToken);
+        if (toolchainConfig is null)
+        {
+            var available = string.Join(", ", toolchainConfigService.ListEmbeddedToolchains());
+            WriteErrorLine($"Toolchain not found: {toolchainName}. Available embedded: {available}");
+            return 1;
+        }
+
+        var missingProperties = ValidateRequiredProperties(toolchainConfig);
         if (missingProperties.Count > 0)
         {
-            WriteErrorLine($"Config is missing required properties: {string.Join(", ", missingProperties)}");
+            WriteErrorLine($"Toolchain config is missing required properties: {string.Join(", ", missingProperties)}");
             return 1;
         }
 
-        var modes = config.Modes ?? [];
+        var modes = toolchainConfig.Modes ?? [];
         if (!modes.TryGetValue(mode, out var modeConfig))
         {
             WriteErrorLine($"Unknown mode: {mode}. Available: {string.Join(", ", modes.Keys)}");
             return 1;
         }
 
-        var platforms = config.Platforms ?? [];
+        var platforms = toolchainConfig.Platforms ?? [];
         if (!platforms.TryGetValue(platform, out var platformConfig))
         {
             WriteErrorLine($"Unknown platform: {platform}. Available: {string.Join(", ", platforms.Keys)}");
             return 1;
         }
 
-        var artifactTypes = config.ArtifactTypes ?? [];
-        var artifactType = config.ArtifactType ?? "executable";
+        var artifactTypes = toolchainConfig.ArtifactTypes ?? [];
+        var artifactType = projectConfig.ArtifactType ?? "executable";
         if (!artifactTypes.TryGetValue(artifactType, out var artifactTypeConfig))
         {
             WriteErrorLine($"Unknown artifact type: {artifactType}. Available: {string.Join(", ", artifactTypes.Keys)}");
             return 1;
         }
 
-        var context = new BuildContext(config, modeConfig, platformConfig, artifactTypeConfig, mode, platform);
+        // Get platform-specific project config if available
+        ProjectPlatformConfig? projectPlatformConfig = null;
+        projectConfig.Platforms?.TryGetValue(platform, out projectPlatformConfig);
+
+        var context = new BuildContext(
+            projectConfig,
+            projectPlatformConfig,
+            toolchainConfig,
+            modeConfig,
+            platformConfig,
+            artifactTypeConfig,
+            mode,
+            platform);
+
         return await ExecuteAsync(context, cancellationToken);
     }
 

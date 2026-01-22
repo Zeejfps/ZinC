@@ -4,12 +4,6 @@ namespace ZinC.Cli.Config;
 
 internal sealed record ToolchainConfig
 {
-    [JsonPropertyName("artifact_name")]
-    public string? ArtifactName { get; init; }
-
-    [JsonPropertyName("artifact_type")]
-    public string? ArtifactType { get; init; }
-
     [JsonPropertyName("compiler_exe")]
     public string? CompilerExe { get; init; }
 
@@ -27,15 +21,6 @@ internal sealed record ToolchainConfig
 
     [JsonPropertyName("link_output_format")]
     public string? LinkOutputFormat { get; init; }
-
-    [JsonPropertyName("src_dir")]
-    public string? SrcDir { get; init; }
-
-    [JsonPropertyName("out_dir")]
-    public string? OutDir { get; init; }
-
-    [JsonPropertyName("include_dirs")]
-    public List<string>? IncludeDirs { get; init; }
 
     [JsonPropertyName("flags")]
     public List<string>? Flags { get; init; }

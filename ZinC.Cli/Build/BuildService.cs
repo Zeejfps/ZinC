@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.Json;
 using ZinC.Cli.Config;
 using ZinC.Cli.Console;
 using ZinC.Cli.Toolchains;
@@ -100,6 +101,26 @@ internal sealed class BuildService
             });
             objectFiles.Add(objectFile);
         }
+
+        // Generate compile_commands.json
+        var compileCommands = new List<CompileCommand>();
+        foreach (var unit in compilationUnits)
+        {
+            var args = new List<string> { compilerExe, compileFlag, unit.SourceFile };
+            args.AddRange(FormatToArgs(compileOutputFormat, unit.ObjectFile));
+            args.AddRange(allCompileFlags);
+
+            compileCommands.Add(new CompileCommand
+            {
+                Directory = workingDir,
+                Arguments = args,
+                File = unit.SourceFile
+            });
+        }
+
+        var compileCommandsPath = Path.Combine(workingDir, "compile_commands.json");
+        await using var stream = File.Create(compileCommandsPath);
+        await JsonSerializer.SerializeAsync(stream, compileCommands, CompileCommandJsonContext.Default.ListCompileCommand, cancellationToken);
 
         // Compile phase (parallel)
         var failedFile = new ConcurrentBag<string>();

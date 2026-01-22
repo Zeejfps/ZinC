@@ -13,9 +13,10 @@ internal sealed class BuildAction : ZincCommandAction
     public required Argument<string> PlatformArgument { get; init; }
     public required Argument<string> ModeArgument { get; init; }
     public required Option<bool> RunOption { get; init; }
+    public required Option<bool> CompileCommandsOption { get; init; }
 
     public override Argument[] Arguments => [ToolchainArgument, PlatformArgument, ModeArgument];
-    public override Option[] Options => [RunOption];
+    public override Option[] Options => [RunOption, CompileCommandsOption];
 
     private readonly IConsole _console;
 
@@ -30,6 +31,7 @@ internal sealed class BuildAction : ZincCommandAction
         var platform = parseResult.GetRequiredValue(PlatformArgument);
         var mode = parseResult.GetRequiredValue(ModeArgument);
         var shouldRun = parseResult.GetValue(RunOption);
+        var generateCompileCommands = parseResult.GetValue(CompileCommandsOption);
 
         // Load project config from zinc.json
         var projectConfigService = new ProjectConfigService();
@@ -98,7 +100,7 @@ internal sealed class BuildAction : ZincCommandAction
         WriteLine($"Building {artifactName} ({mode}/{platform})");
 
         var buildService = new BuildService(_console);
-        var result = await buildService.BuildAsync(context, cancellationToken: cancellationToken);
+        var result = await buildService.BuildAsync(context, generateCompileCommands, cancellationToken: cancellationToken);
 
         if (!result.Success || result.ArtifactPath is null || !shouldRun)
         {

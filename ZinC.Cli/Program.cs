@@ -40,12 +40,18 @@ var runOption = new Option<bool>("--run", "-r")
     Description = "Run the artifact after building"
 };
 
+var compileCommandsOption = new Option<bool>("--compile-commands", "-cc")
+{
+    Description = "Generate compile_commands.json for IDE intellisense"
+};
+
 var buildAction = new BuildAction(console, logger)
 {
     ToolchainArgument = toolchainArg,
     PlatformArgument = platformArg,
     ModeArgument = modeArg,
     RunOption = runOption,
+    CompileCommandsOption = compileCommandsOption,
 };
 
 var configureAction = new ConfigureAction(console, logger)

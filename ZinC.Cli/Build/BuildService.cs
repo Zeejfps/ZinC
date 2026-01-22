@@ -25,6 +25,7 @@ internal sealed class BuildService
 
     public async Task<BuildResult> BuildAsync(
         BuildContext context,
+        bool generateCompileCommands = false,
         string? workingDir = null,
         CancellationToken cancellationToken = default)
     {
@@ -103,24 +104,27 @@ internal sealed class BuildService
         }
 
         // Generate compile_commands.json
-        var compileCommands = new List<CompileCommand>();
-        foreach (var unit in compilationUnits)
+        if (generateCompileCommands)
         {
-            var args = new List<string> { compilerExe, compileFlag, unit.SourceFile };
-            args.AddRange(FormatToArgs(compileOutputFormat, unit.ObjectFile));
-            args.AddRange(allCompileFlags);
-
-            compileCommands.Add(new CompileCommand
+            var compileCommands = new List<CompileCommand>();
+            foreach (var unit in compilationUnits)
             {
-                Directory = workingDir,
-                Arguments = args,
-                File = unit.SourceFile
-            });
-        }
+                var args = new List<string> { compilerExe, compileFlag, unit.SourceFile };
+                args.AddRange(FormatToArgs(compileOutputFormat, unit.ObjectFile));
+                args.AddRange(allCompileFlags);
 
-        var compileCommandsPath = Path.Combine(workingDir, "compile_commands.json");
-        await using var stream = File.Create(compileCommandsPath);
-        await JsonSerializer.SerializeAsync(stream, compileCommands, CompileCommandJsonContext.Default.ListCompileCommand, cancellationToken);
+                compileCommands.Add(new CompileCommand
+                {
+                    Directory = workingDir,
+                    Arguments = args,
+                    File = unit.SourceFile
+                });
+            }
+
+            var compileCommandsPath = Path.Combine(workingDir, "compile_commands.json");
+            await using var stream = File.Create(compileCommandsPath);
+            await JsonSerializer.SerializeAsync(stream, compileCommands, CompileCommandJsonContext.Default.ListCompileCommand, cancellationToken);
+        }
 
         // Compile phase (parallel)
         var failedFile = new ConcurrentBag<string>();

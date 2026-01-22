@@ -15,6 +15,17 @@ internal readonly struct CompilationUnit
     public required string RelativePath { get; init; }
 }
 
+internal readonly struct CompilationPreparation
+{
+    public required List<CompilationUnit> CompilationUnits { get; init; }
+    public required List<string> ObjectFiles { get; init; }
+    public required List<string> AllCompileFlags { get; init; }
+    public required string CompilerExe { get; init; }
+    public required string CompileFlag { get; init; }
+    public required string CompileOutputFormat { get; init; }
+    public required string WorkingDir { get; init; }
+}
+
 internal sealed class BuildService
 {
     private readonly IConsole _console;
@@ -33,105 +44,20 @@ internal sealed class BuildService
     {
         workingDir ??= Directory.GetCurrentDirectory();
 
-        var project = context.ProjectConfig;
-        var projectPlatform = context.ProjectPlatformConfig;
-        var toolchain = context.ToolchainConfig;
-        var mode = context.ModeConfig;
-        var platform = context.PlatformConfig;
-        var artifactType = context.ArtifactTypeConfig;
-
-        var srcDir = Path.Combine(workingDir, project.SrcDir ?? "src");
-        var outDir = Path.Combine(workingDir, project.OutDir ?? "out");
-        var objDir = Path.Combine(outDir, "obj");
-
-        Directory.CreateDirectory(outDir);
-        Directory.CreateDirectory(objDir);
-
-        var sourceExtensions = toolchain.SourceExtensions ?? [".c"];
-        var sourceFiles = sourceExtensions
-            .SelectMany(ext => Directory.GetFiles(srcDir, $"*{ext}", SearchOption.AllDirectories))
-            .Distinct()
-            .ToArray();
-
-        // Apply platform-specific source filtering if specified
-        if (projectPlatform?.Sources is { Count: > 0 })
+        var preparation = PrepareCompilation(context, workingDir);
+        if (preparation is null)
         {
-            sourceFiles = FilterSourcesByPatterns(sourceFiles, srcDir, projectPlatform.Sources);
-        }
-
-        if (sourceFiles.Length == 0)
-        {
-            _console.WriteErrorLine($"No source files found in: {srcDir}");
             return new BuildResult(false, null, 1);
         }
 
-        _console.WriteLine($"Found {sourceFiles.Length} source file(s)");
-
-        // Collect flags from toolchain
-        var compileFlags = CollectCompileFlags(toolchain, mode, platform, artifactType);
-
-        // Collect include dirs from project (base + platform-specific)
-        var includeDirs = Collect(project.IncludeDirs, projectPlatform?.IncludeDirs);
-        var includeFlags = includeDirs.Select(dir => $"-I{Path.Combine(workingDir, dir)}");
-
-        // Collect defines from both toolchain and project
-        var defines = Collect(
-            toolchain.Defines,
-            mode.Defines,
-            platform.Defines,
-            project.Defines,
-            projectPlatform?.Defines);
-        var defineFlags = defines.Select(d => $"-D{d}");
-
-        var allCompileFlags = compileFlags
-            .Concat(includeFlags)
-            .Concat(defineFlags)
-            .ToList();
-
-        var compilerExe = toolchain.CompilerExe!;
-        var compileFlag = toolchain.CompileFlag!;
-        var compileOutputFormat = toolchain.CompileOutputFormat!;
-        var objectExtension = platform.ObjectExtension ?? ".o";
-
-        var objectFiles = new List<string>();
-        var compilationUnits = new List<CompilationUnit>();
-
-        foreach (var sourceFile in sourceFiles)
-        {
-            var relativePath = Path.GetRelativePath(srcDir, sourceFile);
-            var objectFileName = Path.ChangeExtension(relativePath, objectExtension)
-                .Replace(Path.DirectorySeparatorChar, '_');
-            var objectFile = Path.Combine(objDir, objectFileName);
-            compilationUnits.Add(new CompilationUnit
-            {
-                SourceFile = sourceFile,
-                ObjectFile = objectFile,
-                RelativePath = relativePath
-            });
-            objectFiles.Add(objectFile);
-        }
+        var project = context.ProjectConfig;
+        var artifactType = context.ArtifactTypeConfig;
+        var outDir = Path.Combine(workingDir, project.OutDir ?? "out");
 
         // Generate compile_commands.json
         if (generateCompileCommands)
         {
-            var compileCommands = new List<CompileCommand>();
-            foreach (var unit in compilationUnits)
-            {
-                var args = new List<string> { compilerExe, compileFlag, unit.SourceFile };
-                args.AddRange(FormatToArgs(compileOutputFormat, unit.ObjectFile));
-                args.AddRange(allCompileFlags);
-
-                compileCommands.Add(new CompileCommand
-                {
-                    Directory = workingDir,
-                    Arguments = args,
-                    File = unit.SourceFile
-                });
-            }
-
-            var compileCommandsPath = Path.Combine(workingDir, "compile_commands.json");
-            await using var stream = File.Create(compileCommandsPath);
-            await JsonSerializer.SerializeAsync(stream, compileCommands, CompileCommandJsonContext.Default.ListCompileCommand, cancellationToken);
+            await GenerateCompileCommandsFileAsync(preparation.Value, cancellationToken);
         }
 
         // Compile phase (parallel)
@@ -148,20 +74,20 @@ internal sealed class BuildService
 
         try
         {
-            await Parallel.ForEachAsync(compilationUnits, parallelOptions, async (unit, ct) =>
+            await Parallel.ForEachAsync(preparation.Value.CompilationUnits, parallelOptions, async (unit, ct) =>
             {
                 _console.WriteLine($"  Compiling: {unit.RelativePath}");
 
-                var compileArgs = new List<string> { compileFlag, unit.SourceFile };
-                compileArgs.AddRange(FormatToArgs(compileOutputFormat, unit.ObjectFile));
-                compileArgs.AddRange(allCompileFlags);
+                var compileArgs = new List<string> { preparation.Value.CompileFlag, unit.SourceFile };
+                compileArgs.AddRange(FormatToArgs(preparation.Value.CompileOutputFormat, unit.ObjectFile));
+                compileArgs.AddRange(preparation.Value.AllCompileFlags);
 
                 if (verbose)
                 {
-                    _console.WriteLine($"    {compilerExe} {string.Join(" ", compileArgs)}");
+                    _console.WriteLine($"    {preparation.Value.CompilerExe} {string.Join(" ", compileArgs)}");
                 }
 
-                var compileResult = await RunProcessAsync(compilerExe, compileArgs, workingDir, ct);
+                var compileResult = await RunProcessAsync(preparation.Value.CompilerExe, compileArgs, workingDir, ct);
                 if (compileResult != 0)
                 {
                     failedFile.Add(unit.RelativePath);
@@ -187,10 +113,10 @@ internal sealed class BuildService
         // Link/Archive phase
         if (artifactType.UseArchiver)
         {
-            return await ArchiveAsync(context, objectFiles, outDir, workingDir, verbose, cancellationToken);
+            return await ArchiveAsync(context, preparation.Value.ObjectFiles, outDir, workingDir, verbose, cancellationToken);
         }
 
-        return await LinkAsync(context, objectFiles, outDir, workingDir, verbose, cancellationToken);
+        return await LinkAsync(context, preparation.Value.ObjectFiles, outDir, workingDir, verbose, cancellationToken);
     }
 
     private async Task<BuildResult> LinkAsync(
@@ -367,6 +293,139 @@ internal sealed class BuildService
     {
         var formatted = string.Format(format, value);
         return formatted.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    public async Task<bool> GenerateCompileCommandsAsync(
+        BuildContext context,
+        string? workingDir = null,
+        CancellationToken cancellationToken = default)
+    {
+        workingDir ??= Directory.GetCurrentDirectory();
+
+        var preparation = PrepareCompilation(context, workingDir);
+        if (preparation is null)
+        {
+            return false;
+        }
+
+        await GenerateCompileCommandsFileAsync(preparation.Value, cancellationToken);
+        return true;
+    }
+
+    private CompilationPreparation? PrepareCompilation(BuildContext context, string workingDir)
+    {
+        var project = context.ProjectConfig;
+        var projectPlatform = context.ProjectPlatformConfig;
+        var toolchain = context.ToolchainConfig;
+        var mode = context.ModeConfig;
+        var platform = context.PlatformConfig;
+        var artifactType = context.ArtifactTypeConfig;
+
+        var srcDir = Path.Combine(workingDir, project.SrcDir ?? "src");
+        var outDir = Path.Combine(workingDir, project.OutDir ?? "out");
+        var objDir = Path.Combine(outDir, "obj");
+
+        Directory.CreateDirectory(outDir);
+        Directory.CreateDirectory(objDir);
+
+        var sourceExtensions = toolchain.SourceExtensions ?? [".c"];
+        var sourceFiles = sourceExtensions
+            .SelectMany(ext => Directory.GetFiles(srcDir, $"*{ext}", SearchOption.AllDirectories))
+            .Distinct()
+            .ToArray();
+
+        // Apply platform-specific source filtering if specified
+        if (projectPlatform?.Sources is { Count: > 0 })
+        {
+            sourceFiles = FilterSourcesByPatterns(sourceFiles, srcDir, projectPlatform.Sources);
+        }
+
+        if (sourceFiles.Length == 0)
+        {
+            _console.WriteErrorLine($"No source files found in: {srcDir}");
+            return null;
+        }
+
+        _console.WriteLine($"Found {sourceFiles.Length} source file(s)");
+
+        // Collect flags from toolchain
+        var compileFlags = CollectCompileFlags(toolchain, mode, platform, artifactType);
+
+        // Collect include dirs from project (base + platform-specific)
+        var includeDirs = Collect(project.IncludeDirs, projectPlatform?.IncludeDirs);
+        var includeFlags = includeDirs.Select(dir => $"-I{Path.Combine(workingDir, dir)}");
+
+        // Collect defines from both toolchain and project
+        var defines = Collect(
+            toolchain.Defines,
+            mode.Defines,
+            platform.Defines,
+            project.Defines,
+            projectPlatform?.Defines);
+        var defineFlags = defines.Select(d => $"-D{d}");
+
+        var allCompileFlags = compileFlags
+            .Concat(includeFlags)
+            .Concat(defineFlags)
+            .ToList();
+
+        var compilerExe = toolchain.CompilerExe!;
+        var compileFlag = toolchain.CompileFlag!;
+        var compileOutputFormat = toolchain.CompileOutputFormat!;
+        var objectExtension = platform.ObjectExtension ?? ".o";
+
+        var objectFiles = new List<string>();
+        var compilationUnits = new List<CompilationUnit>();
+
+        foreach (var sourceFile in sourceFiles)
+        {
+            var relativePath = Path.GetRelativePath(srcDir, sourceFile);
+            var objectFileName = Path.ChangeExtension(relativePath, objectExtension)
+                .Replace(Path.DirectorySeparatorChar, '_');
+            var objectFile = Path.Combine(objDir, objectFileName);
+            compilationUnits.Add(new CompilationUnit
+            {
+                SourceFile = sourceFile,
+                ObjectFile = objectFile,
+                RelativePath = relativePath
+            });
+            objectFiles.Add(objectFile);
+        }
+
+        return new CompilationPreparation
+        {
+            CompilationUnits = compilationUnits,
+            ObjectFiles = objectFiles,
+            AllCompileFlags = allCompileFlags,
+            CompilerExe = compilerExe,
+            CompileFlag = compileFlag,
+            CompileOutputFormat = compileOutputFormat,
+            WorkingDir = workingDir
+        };
+    }
+
+    private async Task GenerateCompileCommandsFileAsync(
+        CompilationPreparation preparation,
+        CancellationToken cancellationToken)
+    {
+        var compileCommands = new List<CompileCommand>();
+        foreach (var unit in preparation.CompilationUnits)
+        {
+            var args = new List<string> { preparation.CompilerExe, preparation.CompileFlag, unit.SourceFile };
+            args.AddRange(FormatToArgs(preparation.CompileOutputFormat, unit.ObjectFile));
+            args.AddRange(preparation.AllCompileFlags);
+
+            compileCommands.Add(new CompileCommand
+            {
+                Directory = preparation.WorkingDir,
+                Arguments = args,
+                File = unit.SourceFile
+            });
+        }
+
+        var compileCommandsPath = Path.Combine(preparation.WorkingDir, "compile_commands.json");
+        await using var stream = File.Create(compileCommandsPath);
+        await JsonSerializer.SerializeAsync(stream, compileCommands, CompileCommandJsonContext.Default.ListCompileCommand, cancellationToken);
     }
 
     private async Task<int> RunProcessAsync(

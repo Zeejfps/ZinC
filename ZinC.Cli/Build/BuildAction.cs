@@ -1,9 +1,7 @@
 using System.CommandLine;
 using System.Diagnostics;
-using ZinC.Cli.Config;
 using ZinC.Cli.Console;
 using ZinC.Cli.Logging;
-using ZinC.Cli.Toolchains;
 
 namespace ZinC.Cli.Build;
 
@@ -35,70 +33,21 @@ internal sealed class BuildAction : ZincCommandAction
         var generateCompileCommands = parseResult.GetValue(CompileCommandsOption);
         var verbose = parseResult.GetValue(VerboseOption);
 
-        // Load project config from zinc.json
-        var projectConfigService = new ProjectConfigService();
-        var projectConfig = await projectConfigService.LoadAsync(cancellationToken: cancellationToken);
-        if (projectConfig is null)
+        // Create build context
+        var factory = new BuildContextFactory();
+        var contextResult = await factory.CreateContextAsync(toolchainName, platform, mode, cancellationToken);
+
+        if (!contextResult.IsSuccess)
         {
-            WriteErrorLine("Project config not found: zinc.json");
+            WriteErrorLine(contextResult.ErrorMessage!);
             return 1;
         }
 
-        // Load toolchain config (file first, then embedded fallback)
-        var toolchainConfigService = new ToolchainConfigService();
-        var toolchainConfig = await toolchainConfigService.LoadAsync(toolchainName, cancellationToken: cancellationToken);
-        if (toolchainConfig is null)
-        {
-            var available = string.Join(", ", toolchainConfigService.ListEmbeddedToolchains());
-            WriteErrorLine($"Toolchain not found: {toolchainName}. Available embedded: {available}");
-            return 1;
-        }
-
-        var missingProperties = ValidateRequiredProperties(toolchainConfig);
-        if (missingProperties.Count > 0)
-        {
-            WriteErrorLine($"Toolchain config is missing required properties: {string.Join(", ", missingProperties)}");
-            return 1;
-        }
-
-        var modes = toolchainConfig.Modes ?? [];
-        if (!modes.TryGetValue(mode, out var modeConfig))
-        {
-            WriteErrorLine($"Unknown mode: {mode}. Available: {string.Join(", ", modes.Keys)}");
-            return 1;
-        }
-
-        var platforms = toolchainConfig.Platforms ?? [];
-        if (!platforms.TryGetValue(platform, out var platformConfig))
-        {
-            WriteErrorLine($"Unknown platform: {platform}. Available: {string.Join(", ", platforms.Keys)}");
-            return 1;
-        }
-
-        var artifactTypes = toolchainConfig.ArtifactTypes ?? [];
-        var artifactType = projectConfig.ArtifactType ?? "executable";
-        if (!artifactTypes.TryGetValue(artifactType, out var artifactTypeConfig))
-        {
-            WriteErrorLine($"Unknown artifact type: {artifactType}. Available: {string.Join(", ", artifactTypes.Keys)}");
-            return 1;
-        }
-
-        // Get platform-specific project config if available
-        ProjectPlatformConfig? projectPlatformConfig = null;
-        projectConfig.Platforms?.TryGetValue(platform, out projectPlatformConfig);
-
-        var context = new BuildContext(
-            projectConfig,
-            projectPlatformConfig,
-            toolchainConfig,
-            modeConfig,
-            platformConfig,
-            artifactTypeConfig,
-            mode,
-            platform);
+        var context = contextResult.Context!;
+        var artifactName = context.ProjectConfig.ArtifactName ?? "a";
+        var artifactType = context.ProjectConfig.ArtifactType ?? "executable";
 
         // Build
-        var artifactName = projectConfig.ArtifactName ?? "a";
         WriteLine($"Building {artifactName} ({mode}/{platform})");
 
         var buildService = new BuildService(_console);
@@ -156,25 +105,5 @@ internal sealed class BuildAction : ZincCommandAction
         WriteLine($"Process exited with code {process.ExitCode}");
 
         return process.ExitCode;
-    }
-
-    private static List<string> ValidateRequiredProperties(ToolchainConfig config)
-    {
-        var missing = new List<string>();
-
-        if (string.IsNullOrEmpty(config.CompilerExe))
-            missing.Add("compiler_exe");
-        if (string.IsNullOrEmpty(config.CompileFlag))
-            missing.Add("compile_flag");
-        if (string.IsNullOrEmpty(config.CompileOutputFormat))
-            missing.Add("compile_output_format");
-        if (string.IsNullOrEmpty(config.LinkOutputFormat))
-            missing.Add("link_output_format");
-        if (string.IsNullOrEmpty(config.LibDirFormat))
-            missing.Add("lib_dir_format");
-        if (string.IsNullOrEmpty(config.LibFormat))
-            missing.Add("lib_format");
-
-        return missing;
     }
 }

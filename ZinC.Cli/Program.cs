@@ -77,6 +77,22 @@ var toolchainsAction = new ToolchainsAction(console, logger)
     }
 };
 
+var compileCommandsAction = new CompileCommandsAction(console, logger)
+{
+    ToolchainArgument = new Argument<string>("toolchain")
+    {
+        Description = "The toolchain to use (gcc, clang, msvc, etc.)"
+    },
+    PlatformArgument = new Argument<string>("platform")
+    {
+        Description = "The platform to build for (windows, linux, macos, wasm, etc.)"
+    },
+    ModeArgument = new Argument<string>("mode")
+    {
+        Description = "The build mode (debug, release, etc.)"
+    }
+};
+
 var rootCommand = new RootCommand("The simplest 'C' build tool around.")
 {
     Action = new HelpAction(),
@@ -87,6 +103,9 @@ var rootCommand = new RootCommand("The simplest 'C' build tool around.")
 
         new Command("build", "Builds the project.")
             .WithAction(buildAction),
+
+        new Command("compile-commands", "Generates compile_commands.json for IDE intellisense.")
+            .WithAction(compileCommandsAction),
 
         new Command("configure", "Ejects a toolchain config for customization.")
             .WithAction(configureAction),

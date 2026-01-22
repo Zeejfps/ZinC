@@ -50,9 +50,9 @@ internal sealed class BuildService
             .Concat(defineFlags)
             .ToList();
 
-        var compilerExe = config.CompilerExe ?? "gcc";
-        var compileFlag = config.CompileFlag ?? "-c";
-        var compileOutputFormat = config.CompileOutputFormat ?? "-o {0}";
+        var compilerExe = config.CompilerExe!;
+        var compileFlag = config.CompileFlag!;
+        var compileOutputFormat = config.CompileOutputFormat!;
         var objectExtension = platformConfig.ObjectExtension ?? ".o";
 
         // Compile phase
@@ -112,10 +112,10 @@ internal sealed class BuildService
         var linkFlags = CollectLinkFlags(config, modeConfig, platformConfig, artifactTypeConfig);
         var libDirs = platformConfig.LibDirs ?? [];
         var libs = platformConfig.Libs ?? [];
-        var libDirFormat = config.LibDirFormat ?? "-L{0}";
-        var libFormat = config.LibFormat ?? "-l{0}";
-        var linkOutputFormat = config.LinkOutputFormat ?? "-o {0}";
-        var compilerExe = config.CompilerExe ?? "gcc";
+        var libDirFormat = config.LibDirFormat!;
+        var libFormat = config.LibFormat!;
+        var linkOutputFormat = config.LinkOutputFormat!;
+        var compilerExe = config.CompilerExe!;
 
         var libDirFlags = libDirs.Select(dir => string.Format(libDirFormat, Path.Combine(workingDir, dir)));
         var libFlags = libs.Select(lib => string.Format(libFormat, lib));

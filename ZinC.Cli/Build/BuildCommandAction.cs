@@ -39,6 +39,13 @@ internal abstract class BuildCommandAction : ZincCommandAction
             return 1;
         }
 
+        var missingProperties = ValidateRequiredProperties(config);
+        if (missingProperties.Count > 0)
+        {
+            WriteErrorLine($"Config is missing required properties: {string.Join(", ", missingProperties)}");
+            return 1;
+        }
+
         var modes = config.Modes ?? [];
         if (!modes.TryGetValue(mode, out var modeConfig))
         {
@@ -66,4 +73,24 @@ internal abstract class BuildCommandAction : ZincCommandAction
     }
 
     protected abstract Task<int> ExecuteAsync(BuildContext context, CancellationToken cancellationToken);
+
+    private static List<string> ValidateRequiredProperties(ToolchainConfig config)
+    {
+        var missing = new List<string>();
+
+        if (string.IsNullOrEmpty(config.CompilerExe))
+            missing.Add("compiler_exe");
+        if (string.IsNullOrEmpty(config.CompileFlag))
+            missing.Add("compile_flag");
+        if (string.IsNullOrEmpty(config.CompileOutputFormat))
+            missing.Add("compile_output_format");
+        if (string.IsNullOrEmpty(config.LinkOutputFormat))
+            missing.Add("link_output_format");
+        if (string.IsNullOrEmpty(config.LibDirFormat))
+            missing.Add("lib_dir_format");
+        if (string.IsNullOrEmpty(config.LibFormat))
+            missing.Add("lib_format");
+
+        return missing;
+    }
 }

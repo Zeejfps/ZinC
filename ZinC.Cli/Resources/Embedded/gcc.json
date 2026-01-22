@@ -37,14 +37,14 @@
     "release": {
       "flags": [
         "-O2",
-        "-flto"
+        "-flto=auto"
       ],
       "defines": [
         "NDEBUG"
       ],
       "link_flags": [
         "-s",
-        "-flto"
+        "-flto=auto"
       ]
     }
   },

@@ -33,9 +33,10 @@ var platformOption = new Option<string>("--platform", "-p")
     Required = true
 };
 
-var toolchainOption = new Option<string>("--toolchain", "-t", "gcc")
+var toolchainOption = new Option<string>("--toolchain", "-t")
 {
-    Description = "The toolchain to use (gcc, msvc, etc.)"
+    Description = "The toolchain to use (gcc, msvc, etc.)",
+    Required = true
 };
 
 var buildAction = new BuildAction(console, logger)

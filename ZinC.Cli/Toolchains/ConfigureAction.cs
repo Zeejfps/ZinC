@@ -1,9 +1,8 @@
 using System.CommandLine;
-using ZinC.Cli.Config;
 using ZinC.Cli.Console;
 using ZinC.Cli.Logging;
 
-namespace ZinC.Cli.Configure;
+namespace ZinC.Cli.Toolchains;
 
 internal sealed class ConfigureAction : ZincCommandAction
 {

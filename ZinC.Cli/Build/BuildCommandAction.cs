@@ -2,6 +2,7 @@ using System.CommandLine;
 using ZinC.Cli.Config;
 using ZinC.Cli.Console;
 using ZinC.Cli.Logging;
+using ZinC.Cli.Toolchains;
 
 namespace ZinC.Cli.Build;
 

@@ -1,7 +1,6 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Help;
 using ZinC.Cli.Build;
-using ZinC.Cli.Configure;
 using ZinC.Cli.Console;
 using ZinC.Cli.Extensions;
 using ZinC.Cli.Logging;

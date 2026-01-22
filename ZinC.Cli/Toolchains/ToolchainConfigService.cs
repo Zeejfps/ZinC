@@ -1,7 +1,7 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using ZinC.Cli.Resources;
 
-namespace ZinC.Cli.Config;
+namespace ZinC.Cli.Toolchains;
 
 internal sealed class ToolchainConfigService
 {
@@ -20,7 +20,7 @@ internal sealed class ToolchainConfigService
         if (File.Exists(configPath))
         {
             var json = File.ReadAllText(configPath);
-            return JsonSerializer.Deserialize(json, ToolchainConfigJsonContext.Default.ToolchainConfig);
+            return JsonSerializer.Deserialize(json, Config.ToolchainConfigJsonContext.Default.ToolchainConfig);
         }
 
         // Fall back to embedded resource
@@ -35,7 +35,7 @@ internal sealed class ToolchainConfigService
         if (File.Exists(configPath))
         {
             await using var stream = File.OpenRead(configPath);
-            return await JsonSerializer.DeserializeAsync(stream, ToolchainConfigJsonContext.Default.ToolchainConfig, cancellationToken);
+            return await JsonSerializer.DeserializeAsync(stream, Config.ToolchainConfigJsonContext.Default.ToolchainConfig, cancellationToken);
         }
 
         // Fall back to embedded resource
@@ -45,7 +45,7 @@ internal sealed class ToolchainConfigService
     public void Save(ToolchainConfig config, string toolchainName, string? workingDirectory = null)
     {
         var path = ResolveConfigPath(toolchainName, workingDirectory);
-        var json = JsonSerializer.Serialize(config, ToolchainConfigJsonContext.Default.ToolchainConfig);
+        var json = JsonSerializer.Serialize(config, Config.ToolchainConfigJsonContext.Default.ToolchainConfig);
         File.WriteAllText(path, json);
     }
 
@@ -53,7 +53,7 @@ internal sealed class ToolchainConfigService
     {
         var path = ResolveConfigPath(toolchainName, workingDirectory);
         await using var stream = File.Create(path);
-        await JsonSerializer.SerializeAsync(stream, config, ToolchainConfigJsonContext.Default.ToolchainConfig, cancellationToken);
+        await JsonSerializer.SerializeAsync(stream, config, Config.ToolchainConfigJsonContext.Default.ToolchainConfig, cancellationToken);
     }
 
     public ToolchainConfig? LoadFromEmbedded(string toolchainName)
@@ -63,7 +63,7 @@ internal sealed class ToolchainConfigService
         if (json is null)
             return null;
 
-        return JsonSerializer.Deserialize(json, ToolchainConfigJsonContext.Default.ToolchainConfig);
+        return JsonSerializer.Deserialize(json, Config.ToolchainConfigJsonContext.Default.ToolchainConfig);
     }
 
     public async Task<ToolchainConfig?> LoadFromEmbeddedAsync(string toolchainName, CancellationToken cancellationToken = default)
@@ -73,7 +73,7 @@ internal sealed class ToolchainConfigService
         if (json is null)
             return null;
 
-        return JsonSerializer.Deserialize(json, ToolchainConfigJsonContext.Default.ToolchainConfig);
+        return JsonSerializer.Deserialize(json, Config.ToolchainConfigJsonContext.Default.ToolchainConfig);
     }
 
     public bool EmbeddedExists(string toolchainName)

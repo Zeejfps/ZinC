@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using ZinC.Cli.Config;
 using ZinC.Cli.Console;
+using ZinC.Cli.Toolchains;
 
 namespace ZinC.Cli.Build;
 

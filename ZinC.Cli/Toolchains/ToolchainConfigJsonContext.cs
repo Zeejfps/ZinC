@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace ZinC.Cli.Config;
+namespace ZinC.Cli.Toolchains;
 
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,

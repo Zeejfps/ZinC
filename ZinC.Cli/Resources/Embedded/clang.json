@@ -1,0 +1,137 @@
+{
+  "compiler_exe": "clang",
+  "lib_dir_format": "-L{0}",
+  "lib_format": "-l{0}",
+  "compile_flag": "-c",
+  "compile_output_format": "-o {0}",
+  "link_output_format": "-o {0}",
+
+  "flags": [
+    "-std=c17",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Werror=return-type",
+    "-Werror=implicit-function-declaration",
+    "-fdiagnostics-color=always"
+  ],
+
+  "link_flags": [],
+
+  "defines": [],
+
+  "modes": {
+    "debug": {
+      "flags": [
+        "-g3",
+        "-O0",
+        "-fno-omit-frame-pointer",
+        "-fsanitize=address,undefined"
+      ],
+      "defines": [
+        "DEBUG",
+        "_DEBUG"
+      ],
+      "link_flags": [
+        "-fsanitize=address,undefined"
+      ]
+    },
+    "release": {
+      "flags": [
+        "-O3",
+        "-flto"
+      ],
+      "defines": [
+        "NDEBUG"
+      ],
+      "link_flags": [
+        "-flto"
+      ]
+    }
+  },
+
+  "platforms": {
+    "windows": {
+      "artifact_extension": ".exe",
+      "static_lib_extension": ".a",
+      "shared_lib_extension": ".dll",
+      "object_extension": ".o",
+      "defines": [
+        "WIN32",
+        "_WIN32"
+      ],
+      "flags": [],
+      "libs": [],
+      "lib_dirs": [],
+      "link_flags": []
+    },
+    "linux": {
+      "artifact_extension": "",
+      "static_lib_extension": ".a",
+      "shared_lib_extension": ".so",
+      "object_extension": ".o",
+      "defines": [
+        "_GNU_SOURCE"
+      ],
+      "flags": [
+        "-fPIC"
+      ],
+      "libs": [
+        "m"
+      ],
+      "lib_dirs": [],
+      "link_flags": []
+    },
+    "macos": {
+      "artifact_extension": "",
+      "static_lib_extension": ".a",
+      "shared_lib_extension": ".dylib",
+      "object_extension": ".o",
+      "defines": [],
+      "flags": [
+        "-fPIC"
+      ],
+      "libs": [],
+      "lib_dirs": [],
+      "link_flags": []
+    },
+    "wasm": {
+      "artifact_extension": ".wasm",
+      "static_lib_extension": ".a",
+      "shared_lib_extension": ".wasm",
+      "object_extension": ".o",
+      "defines": [
+        "__wasm__",
+        "__wasm32__"
+      ],
+      "flags": [
+        "--target=wasm32",
+        "-nostdlib",
+        "-ffreestanding",
+        "-fno-builtin"
+      ],
+      "libs": [],
+      "lib_dirs": [],
+      "link_flags": [
+        "--target=wasm32",
+        "-nostdlib",
+        "-Wl,--no-entry",
+        "-Wl,--export-all"
+      ]
+    }
+  },
+
+  "artifact_types": {
+    "executable": {
+      "link_flags": []
+    },
+    "static_library": {
+      "use_archiver": true,
+      "archiver_flags": ["rcs"]
+    },
+    "shared_library": {
+      "flags": ["-fPIC"],
+      "link_flags": ["-shared"]
+    }
+  }
+}

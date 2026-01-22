@@ -20,22 +20,19 @@ var setupAction = new SetupAction(console, logger)
     }
 };
 
-var modeOption = new Option<string>("--mode", "-m")
+var toolchainArg = new Argument<string>("toolchain")
 {
-    Description = "The build mode (release, debug, etc...)",
-    Required = true
+    Description = "The toolchain to use (gcc, clang, msvc, etc.)"
 };
 
-var platformOption = new Option<string>("--platform", "-p")
+var platformArg = new Argument<string>("platform")
 {
-    Description = "The platform to build for (windows, osx, linux, wasm, etc...)",
-    Required = true
+    Description = "The platform to build for (windows, linux, macos, wasm, etc.)"
 };
 
-var toolchainOption = new Option<string>("--toolchain", "-t")
+var modeArg = new Argument<string>("mode")
 {
-    Description = "The toolchain to use (gcc, msvc, etc.)",
-    Required = true
+    Description = "The build mode (debug, release, etc.)"
 };
 
 var runOption = new Option<bool>("--run", "-r")
@@ -45,9 +42,9 @@ var runOption = new Option<bool>("--run", "-r")
 
 var buildAction = new BuildAction(console, logger)
 {
-    ModeOption = modeOption,
-    PlatformOption = platformOption,
-    ToolchainOption = toolchainOption,
+    ToolchainArgument = toolchainArg,
+    PlatformArgument = platformArg,
+    ModeArgument = modeArg,
     RunOption = runOption,
 };
 

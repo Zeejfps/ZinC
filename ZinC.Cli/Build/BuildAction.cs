@@ -9,12 +9,13 @@ namespace ZinC.Cli.Build;
 
 internal sealed class BuildAction : ZincCommandAction
 {
-    public required Option<string> ModeOption { get; init; }
-    public required Option<string> PlatformOption { get; init; }
-    public required Option<string> ToolchainOption { get; init; }
+    public required Argument<string> ToolchainArgument { get; init; }
+    public required Argument<string> PlatformArgument { get; init; }
+    public required Argument<string> ModeArgument { get; init; }
     public required Option<bool> RunOption { get; init; }
 
-    public override Option[] Options => [ModeOption, PlatformOption, ToolchainOption, RunOption];
+    public override Argument[] Arguments => [ToolchainArgument, PlatformArgument, ModeArgument];
+    public override Option[] Options => [RunOption];
 
     private readonly IConsole _console;
 
@@ -25,9 +26,9 @@ internal sealed class BuildAction : ZincCommandAction
 
     protected override async Task<int> OnInvokedAsync(ParseResult parseResult, CancellationToken cancellationToken)
     {
-        var mode = parseResult.GetRequiredValue(ModeOption);
-        var platform = parseResult.GetRequiredValue(PlatformOption);
-        var toolchainName = parseResult.GetRequiredValue(ToolchainOption);
+        var toolchainName = parseResult.GetRequiredValue(ToolchainArgument);
+        var platform = parseResult.GetRequiredValue(PlatformArgument);
+        var mode = parseResult.GetRequiredValue(ModeArgument);
         var shouldRun = parseResult.GetValue(RunOption);
 
         // Load project config from zinc.json

@@ -4,7 +4,6 @@ using ZinC.Cli.Build;
 using ZinC.Cli.Console;
 using ZinC.Cli.Extensions;
 using ZinC.Cli.Logging;
-using ZinC.Cli.Run;
 using ZinC.Cli.Setup;
 using ZinC.Cli.Toolchains;
 
@@ -39,18 +38,17 @@ var toolchainOption = new Option<string>("--toolchain", "-t")
     Required = true
 };
 
+var runOption = new Option<bool>("--run", "-r")
+{
+    Description = "Run the artifact after building"
+};
+
 var buildAction = new BuildAction(console, logger)
 {
     ModeOption = modeOption,
     PlatformOption = platformOption,
     ToolchainOption = toolchainOption,
-};
-
-var runAction = new RunAction(console, logger)
-{
-    ModeOption = modeOption,
-    PlatformOption = platformOption,
-    ToolchainOption = toolchainOption,
+    RunOption = runOption,
 };
 
 var configureAction = new ConfigureAction(console, logger)
@@ -77,12 +75,9 @@ var rootCommand = new RootCommand("The simplest 'C' build tool around.")
     {
         new Command("setup", "Sets up a new project.")
             .WithAction(setupAction),
-        
+
         new Command("build", "Builds the project.")
             .WithAction(buildAction),
-        
-        new Command("run","Builds and runs the project.")
-            .WithAction(runAction),
 
         new Command("configure", "Ejects a toolchain config for customization.")
             .WithAction(configureAction),

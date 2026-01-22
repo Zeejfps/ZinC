@@ -1,6 +1,6 @@
 {
-  "compiler_exe": "gcc",
-  "source_extensions": [".c"],
+  "compiler_exe": "g++",
+  "source_extensions": [".cpp", ".cc", ".cxx", ".c++"],
   "lib_dir_format": "-L{0}",
   "lib_format": "-l{0}",
   "compile_flag": "-c",
@@ -8,12 +8,11 @@
   "link_output_format": "-o {0}",
 
   "flags": [
-    "-std=c17",
+    "-std=c++20",
     "-Wall",
     "-Wextra",
     "-Wpedantic",
     "-Werror=return-type",
-    "-Werror=implicit-function-declaration",
     "-fdiagnostics-color=always"
   ],
 
@@ -76,7 +75,8 @@
         "-fPIC"
       ],
       "libs": [
-        "m"
+        "m",
+        "stdc++"
       ],
       "lib_dirs": [],
       "link_flags": []

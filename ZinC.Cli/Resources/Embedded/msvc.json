@@ -1,5 +1,6 @@
 {
   "compiler_exe": "cl",
+  "source_extensions": [".c"],
   "lib_dir_format": "/LIBPATH:{0}",
   "lib_format": "{0}.lib",
   "compile_flag": "/c",

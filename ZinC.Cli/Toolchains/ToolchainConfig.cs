@@ -7,6 +7,9 @@ internal sealed record ToolchainConfig
     [JsonPropertyName("compiler_exe")]
     public string? CompilerExe { get; init; }
 
+    [JsonPropertyName("source_extensions")]
+    public List<string>? SourceExtensions { get; init; }
+
     [JsonPropertyName("lib_dir_format")]
     public string? LibDirFormat { get; init; }
 

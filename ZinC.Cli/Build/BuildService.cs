@@ -43,7 +43,12 @@ internal sealed class BuildService
         Directory.CreateDirectory(outDir);
         Directory.CreateDirectory(objDir);
 
-        var sourceFiles = Directory.GetFiles(srcDir, "*.c", SearchOption.AllDirectories);
+        var sourceExtensions = toolchain.SourceExtensions ?? [".c"];
+        var sourceFiles = sourceExtensions
+            .SelectMany(ext => Directory.GetFiles(srcDir, $"*{ext}", SearchOption.AllDirectories))
+            .Distinct()
+            .ToArray();
+
         if (sourceFiles.Length == 0)
         {
             _console.WriteErrorLine($"No source files found in: {srcDir}");

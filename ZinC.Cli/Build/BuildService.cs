@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
+using Microsoft.Extensions.FileSystemGlobbing;
 using ZinC.Cli.Config;
 using ZinC.Cli.Console;
 using ZinC.Cli.Toolchains;
@@ -51,6 +52,12 @@ internal sealed class BuildService
             .SelectMany(ext => Directory.GetFiles(srcDir, $"*{ext}", SearchOption.AllDirectories))
             .Distinct()
             .ToArray();
+
+        // Apply platform-specific source filtering if specified
+        if (projectPlatform?.Sources is { Count: > 0 })
+        {
+            sourceFiles = FilterSourcesByPatterns(sourceFiles, srcDir, projectPlatform.Sources);
+        }
 
         if (sourceFiles.Length == 0)
         {
@@ -315,6 +322,25 @@ internal sealed class BuildService
             mode.LinkFlags,
             platform.LinkFlags,
             artifactType.LinkFlags);
+    }
+
+    private static string[] FilterSourcesByPatterns(string[] sourceFiles, string srcDir, List<string> patterns)
+    {
+        var matcher = new Matcher(StringComparison.OrdinalIgnoreCase);
+        foreach (var pattern in patterns)
+        {
+            matcher.AddInclude(pattern);
+        }
+
+        var relativePaths = sourceFiles
+            .Select(file => Path.GetRelativePath(srcDir, file))
+            .ToArray();
+
+        var result = matcher.Match(relativePaths);
+
+        return result.Files
+            .Select(match => Path.Combine(srcDir, match.Path))
+            .ToArray();
     }
 
     private static List<string> Collect(params IEnumerable<string>?[] sources)

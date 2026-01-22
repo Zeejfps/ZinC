@@ -34,6 +34,9 @@ internal sealed record ProjectConfig
 
 internal sealed record ProjectPlatformConfig
 {
+    [JsonPropertyName("sources")]
+    public List<string>? Sources { get; init; }
+
     [JsonPropertyName("include_dirs")]
     public List<string>? IncludeDirs { get; init; }
 

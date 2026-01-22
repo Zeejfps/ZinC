@@ -7,6 +7,7 @@ using ZinC.Cli.Extensions;
 using ZinC.Cli.Logging;
 using ZinC.Cli.Run;
 using ZinC.Cli.Setup;
+using ZinC.Cli.Toolchains;
 
 var console = new DefaultConsole();
 var logger = new ConsoleLogger();
@@ -61,6 +62,15 @@ var configureAction = new ConfigureAction(console, logger)
     }
 };
 
+var toolchainsAction = new ToolchainsAction(console, logger)
+{
+    ToolchainArgument = new Argument<string?>("toolchain")
+    {
+        Description = "The toolchain to show details for",
+        Arity = ArgumentArity.ZeroOrOne
+    }
+};
+
 var rootCommand = new RootCommand("The simplest 'C' build tool around.")
 {
     Action = new HelpAction(),
@@ -77,6 +87,9 @@ var rootCommand = new RootCommand("The simplest 'C' build tool around.")
 
         new Command("configure", "Ejects a toolchain config for customization.")
             .WithAction(configureAction),
+
+        new Command("toolchains", "Lists available toolchains and their configurations.")
+            .WithAction(toolchainsAction),
     }
 };
 

@@ -45,6 +45,11 @@ var compileCommandsOption = new Option<bool>("--compile-commands", "-cc")
     Description = "Generate compile_commands.json for IDE intellisense"
 };
 
+var verboseOption = new Option<bool>("--verbose", "-v")
+{
+    Description = "Show full compile and link commands"
+};
+
 var buildAction = new BuildAction(console, logger)
 {
     ToolchainArgument = toolchainArg,
@@ -52,6 +57,7 @@ var buildAction = new BuildAction(console, logger)
     ModeArgument = modeArg,
     RunOption = runOption,
     CompileCommandsOption = compileCommandsOption,
+    VerboseOption = verboseOption,
 };
 
 var configureAction = new ConfigureAction(console, logger)

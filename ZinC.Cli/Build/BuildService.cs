@@ -26,6 +26,7 @@ internal sealed class BuildService
     public async Task<BuildResult> BuildAsync(
         BuildContext context,
         bool generateCompileCommands = false,
+        bool verbose = false,
         string? workingDir = null,
         CancellationToken cancellationToken = default)
     {
@@ -148,6 +149,11 @@ internal sealed class BuildService
                 compileArgs.AddRange(FormatToArgs(compileOutputFormat, unit.ObjectFile));
                 compileArgs.AddRange(allCompileFlags);
 
+                if (verbose)
+                {
+                    _console.WriteLine($"    {compilerExe} {string.Join(" ", compileArgs)}");
+                }
+
                 var compileResult = await RunProcessAsync(compilerExe, compileArgs, workingDir, ct);
                 if (compileResult != 0)
                 {
@@ -174,10 +180,10 @@ internal sealed class BuildService
         // Link/Archive phase
         if (artifactType.UseArchiver)
         {
-            return await ArchiveAsync(context, objectFiles, outDir, workingDir, cancellationToken);
+            return await ArchiveAsync(context, objectFiles, outDir, workingDir, verbose, cancellationToken);
         }
 
-        return await LinkAsync(context, objectFiles, outDir, workingDir, cancellationToken);
+        return await LinkAsync(context, objectFiles, outDir, workingDir, verbose, cancellationToken);
     }
 
     private async Task<BuildResult> LinkAsync(
@@ -185,6 +191,7 @@ internal sealed class BuildService
         List<string> objectFiles,
         string outDir,
         string workingDir,
+        bool verbose,
         CancellationToken cancellationToken)
     {
         var project = context.ProjectConfig;
@@ -228,6 +235,11 @@ internal sealed class BuildService
         linkArgs.AddRange(libDirFlags);
         linkArgs.AddRange(libFlags);
 
+        if (verbose)
+        {
+            _console.WriteLine($"    {compilerExe} {string.Join(" ", linkArgs)}");
+        }
+
         var linkResult = await RunProcessAsync(compilerExe, linkArgs, workingDir, cancellationToken);
         if (linkResult != 0)
         {
@@ -244,6 +256,7 @@ internal sealed class BuildService
         List<string> objectFiles,
         string outDir,
         string workingDir,
+        bool verbose,
         CancellationToken cancellationToken)
     {
         var project = context.ProjectConfig;
@@ -261,6 +274,11 @@ internal sealed class BuildService
             archiveArgs.AddRange(artifactType.ArchiverFlags);
         archiveArgs.Add(artifactPath);
         archiveArgs.AddRange(objectFiles);
+
+        if (verbose)
+        {
+            _console.WriteLine($"    ar {string.Join(" ", archiveArgs)}");
+        }
 
         var archiveResult = await RunProcessAsync("ar", archiveArgs, workingDir, cancellationToken);
         if (archiveResult != 0)

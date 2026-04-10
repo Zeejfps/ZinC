@@ -1,18 +1,13 @@
 name: Release
-run-name: Release ${{ inputs.tag || github.ref_name }}
+run-name: Release ${{ github.ref_name }}
 
 on:
   push:
     tags:
       - 'v*.*.*'
-  workflow_call:
-    inputs:
-      tag:
-        required: true
-        type: string
 
 env:
-  TAG: ${{ inputs.tag || github.ref_name }}
+  TAG: ${{ github.ref_name }}
 
 jobs:
   build:
@@ -32,8 +27,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.TAG }}
 
       - uses: actions/setup-dotnet@v4
         with:

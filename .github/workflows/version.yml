@@ -1,5 +1,5 @@
 name: Version
-run-name: Version Bump
+run-name: Version Check (${{ github.event.head_commit.message }})
 
 on:
   push:

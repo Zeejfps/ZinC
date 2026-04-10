@@ -4,6 +4,14 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   build:
@@ -23,6 +31,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -35,7 +45,7 @@ jobs:
 
       - name: Extract version from tag
         shell: bash
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+        run: echo "VERSION=${TAG#v}" >> $GITHUB_ENV
 
       - name: Publish
         run: dotnet publish ZinC.Cli/ZinC.Cli.csproj -c Release -r ${{ matrix.rid }} -p:Version=${{ env.VERSION }}
@@ -43,16 +53,16 @@ jobs:
       - name: Package (Windows)
         if: matrix.rid == 'win-x64'
         shell: pwsh
-        run: Compress-Archive -Path ZinC.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish/* -DestinationPath zinc-${{ github.ref_name }}-${{ matrix.rid }}.zip
+        run: Compress-Archive -Path ZinC.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish/* -DestinationPath zinc-${{ env.TAG }}-${{ matrix.rid }}.zip
 
       - name: Package (Linux/macOS)
         if: matrix.rid != 'win-x64'
-        run: tar czf zinc-${{ github.ref_name }}-${{ matrix.rid }}.tar.gz -C ZinC.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish .
+        run: tar czf zinc-${{ env.TAG }}-${{ matrix.rid }}.tar.gz -C ZinC.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish .
 
       - uses: actions/upload-artifact@v4
         with:
           name: zinc-${{ matrix.rid }}
-          path: zinc-${{ github.ref_name }}-${{ matrix.rid }}.*
+          path: zinc-${{ env.TAG }}-${{ matrix.rid }}.*
 
   release:
     needs: build
@@ -67,5 +77,6 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.TAG }}
           generate_release_notes: true
           files: zinc-*

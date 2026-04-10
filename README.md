@@ -18,7 +18,11 @@ ZinC is a lightweight, cross-platform build tool for C projects that simplifies 
 
 ## Installation
 
-Build from source:
+```bash
+curl -fsSL https://raw.githubusercontent.com/Zeejfps/ZinC/main/install.sh | bash
+```
+
+Or build from source:
 
 ```bash
 dotnet publish ZinC.Cli/ZinC.Cli.csproj -c Release
